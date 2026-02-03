@@ -2,7 +2,7 @@
   "name": "dz-community-food",
   "version": "1.0.0",
   "description": "Backend for DZ Community Food project",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
     "note0": "cross env ضرورية لتنفيد امر تعديل NODE_ENV في وينداوز",
     "start:prod": "cross-env NODE_ENV=production node server.js",
