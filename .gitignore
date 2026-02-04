@@ -1,2 +1,7 @@
-node_modules
-.env
+
+=======
+git add .gitignore package.json package-lock.json
+node_modules/
+config.env
+>>>>>>> Stashed changes
+
