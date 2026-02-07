@@ -7,8 +7,12 @@ const userSchema = new mongoose.Schema(
     userName: {
       type: String,
       required: [true, "user name is required"],
-      trim: true,
+      minlength: [6, "user name is too short"],
+      maxlength: [18, "user name is too long"],
       unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers and underscores'],
     },
     slug: {
       type: String,
@@ -18,29 +22,38 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "email is required"],
       unique: true,
+      trim: true,
       lowercase: true,
+      match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Please add a valid email address'],
     },
     password: {
       type: String,
       required: [true, "password is required"],
-      minlength: [8, "password is too short"],
+      minlength: [6, "password is too short"],
+      maxlength: [18, "password is too long"],
+      select: false,
     },
+    passwordChangedAt: Date,
     role: {
       type: String,
-      enum: ["user", "manager", "admin"],
+      enum: ["user", "resturant", "admin"],
       default: "user",
     },
+    active: {
+      type: Boolean,
+      default: true,
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
-// hashing the psw
+
+// Middlewares
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-// Generate slug before save
 userSchema.pre("save", function (next) {
   if (this.isModified("userName")) {
     this.slug = slugify(this.userName, { lower: true });
@@ -49,5 +62,4 @@ userSchema.pre("save", function (next) {
 });
 
 const User = mongoose.model("User", userSchema);
-
 module.exports = User;
