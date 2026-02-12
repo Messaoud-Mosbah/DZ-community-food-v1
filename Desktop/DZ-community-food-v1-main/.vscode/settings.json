@@ -1,0 +1,18 @@
+//This configuration improves
+//  code navigation by visually 
+// separating key structures
+//  (like Classes and Interfaces) 
+// and updates the spell
+//  checker to recognize 
+// "uuidv" as a valid term.
+
+
+{
+  "separators.enabledSymbols": [
+    "Classes",
+    "Enums",
+    "Interfaces",
+    "Namespaces",
+    "Structs"
+  ],
+}
