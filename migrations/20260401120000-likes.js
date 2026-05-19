@@ -2,7 +2,7 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable("likes", {
+    await queryInterface.createTable("likes_post", { // تغيير الاسم ليطابق tableName: "likes_post"
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
@@ -15,10 +15,10 @@ module.exports = {
         references: { model: "users", key: "id" }, 
         onDelete: "CASCADE",
       },
-      productId: {
+      postId: { // تغيير من productId إلى postId
         type: Sequelize.UUID,
         allowNull: false,
-        references: { model: "products", key: "id" },
+        references: { model: "posts", key: "id" }, // المرجع إلى جدول المنشورات
         onDelete: "CASCADE",
       },
       createdAt: {
@@ -31,13 +31,13 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex("likes", ["userId", "productId"], {
+    await queryInterface.addIndex("likes_post", ["userId", "postId"], {
       unique: true,
-      name: "unique_user_product_like",
+      name: "unique_user_post_like",
     });
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable("likes");
+    await queryInterface.dropTable("likes_post");
   },
 };

@@ -18,6 +18,7 @@ const {
 
 router.use(protect, allwodTo("USER"));
 
+//work 100%
 router.get("/", getCart);
 router.post("/", addToCartValidator, addToCart);
 router.patch("/:itemId", updateCartItemValidator, updateCartItem);

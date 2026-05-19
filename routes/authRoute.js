@@ -33,12 +33,13 @@ router.post("/sign-up", signupValidator, signup);
 router.get("/verify-email-token/:token", verifyEmail);
 
 router.post("/resend-verification-email", resend_verification_email);
-
+// no link with front end
 router.post("/sign-out", protect, logout);
 
 router.post("/sign-in", loginValidator, signin);
 
 router.post("/forget-password", forgetPassword);
+// problem in front  in the case of user.password=new password
 
 router.get("/verify-reset-password-token/:token", verifyResetToken);
 ////////////////////////////////////

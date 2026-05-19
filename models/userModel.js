@@ -31,7 +31,6 @@ const User = sequelize.define(
       validate: {
         isEmail: true,
       },
-        defaultValue: null, // مصفوفة فارغة افتراضياً
     },
     role: {
       type: DataTypes.ENUM("USER", "RESTAURANT", "ADMIN","GUEST"),
@@ -60,7 +59,6 @@ const User = sequelize.define(
     password: {
       type: DataTypes.STRING,
       allowNull: false,
-        defaultValue: null, // مصفوفة فارغة افتراضياً
 
     },
     passwordChangedAt: {

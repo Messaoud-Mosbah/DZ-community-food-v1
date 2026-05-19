@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database");
+
 const UserProfile = sequelize.define("UserProfile", {
   id: {
     type: DataTypes.UUID,
@@ -8,54 +9,49 @@ const UserProfile = sequelize.define("UserProfile", {
   },
   fullName: {
     type: DataTypes.STRING(100),
-    allowNull: false,
-      defaultValue: null, // مصفوفة فارغة افتراضياً
-
+    allowNull: true, // اجعلها true مؤقتاً لتجنب فشل الإنشاء التلقائي
+    defaultValue: "User Name", 
   },
   city: {
     type: DataTypes.STRING(100),
     allowNull: true,
-      defaultValue: null, // مصفوفة فارغة افتراضياً
-
+    defaultValue: null,
   },
-   phoneNumber: {
-    type: DataTypes.STRING(20), 
+  phoneNumber: {
+    type: DataTypes.STRING(20),
     allowNull: true,
-      defaultValue: null, // مصفوفة فارغة افتراضياً
-
+    defaultValue: null,
   },
   bio: {
     type: DataTypes.TEXT,
     allowNull: true,
-      defaultValue: null, // مصفوفة فارغة افتراضياً
-
+    defaultValue: null,
   },
-  
   profilePicture: {
     type: DataTypes.STRING(255),
     defaultValue: null,
   },
-usageGoal: {
-  type: DataTypes.JSON, 
-  allowNull: true,
-  defaultValue: null, // مصفوفة فارغة افتراضياً
-},
-kitchenCategory: {
-  type: DataTypes.JSON, 
-  allowNull: true,
-  defaultValue: null,
-},
-  
+  usageGoal: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [], // إذا كانت مصفوفة، يفضل [] بدلاً من null
+  },
+  kitchenCategory: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [], 
+  },
   userId: {
-    type: DataTypes.UUID, 
+    type: DataTypes.UUID,
     unique: true,
+    allowNull: false, // لا يمكن وجود بروفايل بدون يوزر
     references: {
       model: 'users',
       key: 'id',
     },
   },
 }, {
-  tableName: 'users_profiles',
+  tableName: 'users_profiles', // تأكد أن الجدول بهذا الاسم في MySQL
   timestamps: true,
 });
 

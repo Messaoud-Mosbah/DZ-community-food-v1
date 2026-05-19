@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../utils/apiError");
-const { User, UserProfile, RestaurantProfile } = require("../models");
+const { User, UserProfile, RestaurantProfile ,Post} = require("../models");
 
 
 const userAttributes = [
@@ -17,7 +17,8 @@ const userAttributes = [
 exports.getOwnProfile = asyncHandler(async (req, res, next) => {
    const user = await User.findByPk(req.authenticatedUser.id, {
     attributes: userAttributes, 
-    include: [UserProfile, RestaurantProfile],
+    include: [UserProfile, RestaurantProfile,Post],
+
   });
  
 
@@ -45,7 +46,7 @@ exports.getUserProfileById = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.params.id, {
     //  whitelist: only fetch what you need + role for the check
     attributes: ["id", "userName", "slug", "createdAt", "role"],
-    include: [profileInclude],
+    include: [profileInclude,Post],
   });
 
   if (!user) return next(new ApiError("User not found", 404));

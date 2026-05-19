@@ -12,7 +12,7 @@ const {
   validateGetPosts,
   validateidpost,
 } = require("../utils/validators/postValidation");
-const { createCommentValidator } = require("../utils/validators/commentValidator");
+
 
 // ── 1. All Posts ──────────────────────────────────────────────────
 router.route("/")
@@ -31,7 +31,19 @@ router.get("/my-posts", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postSe
 // ── 3. Pin Toggle ─────────────────────────────────────────────────
 router.get("/pin/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.togglePin);
 
-// ── 4. Single Post (CRUD) ─────────────────────────────────────────
+
+router.route("/:postId/comments")
+  .get(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getPostComments)
+  .post(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.createComment);
+
+router.delete("/comments/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.deleteComment);
+
+// @desc      (Like/Unlike)
+router.post("/:postId/toggle-like", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.toggleLike);
+
+router.get("/:postId/check-like", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.checkIfLiked);
+
+// ── 6. Single Post (CRUD) ─────────────────────────────────────────
 router.route("/:id")
   .get(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateidpost, postService.getOnePost)
   .patch(

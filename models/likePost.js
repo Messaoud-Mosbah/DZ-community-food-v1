@@ -1,8 +1,7 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database");
-      const Product = require("./productModel");
 
-const Like = sequelize.define("Like", {
+const LikePosts = sequelize.define("LikePosts", {
   id: { 
     type: DataTypes.UUID, 
     defaultValue: DataTypes.UUIDV4, 
@@ -12,32 +11,34 @@ const Like = sequelize.define("Like", {
     type: DataTypes.UUID, 
     allowNull: false 
   },
-  productId: { 
+  postId: { 
     type: DataTypes.UUID, 
     allowNull: false 
   },
 }, {
-  tableName: "likes",
+  tableName: "likes_post",
+  timestamps: true,
   indexes: [
     {
       unique: true,
-      fields: ['userId', 'productId']
+      fields: ['userId', 'postId']
     }
   ],
   hooks: {
     afterCreate: async (like, options) => {
-      await Product.increment('likeCount', { 
-        where: { id: like.productId },
+      // استخدام sequelize.models لتفادي مشاكل الـ require الدائري
+      await sequelize.models.Post.increment('likeCount', { 
+        where: { id: like.postId },
         transaction: options.transaction 
       });
     },
     afterDestroy: async (like, options) => {
-      await Product.decrement('likeCount', { 
-        where: { id: like.productId },
+      await sequelize.models.Post.decrement('likeCount', { 
+        where: { id: like.postId },
         transaction: options.transaction
       });
     }
   }
 });
 
-module.exports = Like;
+module.exports = LikePosts;

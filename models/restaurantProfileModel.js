@@ -12,7 +12,6 @@ const RestaurantProfile = sequelize.define("RestaurantProfile", {
   restaurantName: {
     type: DataTypes.STRING(50),
     allowNull: false,
-    defaultValue: null, // مصفوفة فارغة افتراضياً
 
   },
   businessEmail: {
@@ -25,7 +24,6 @@ const RestaurantProfile = sequelize.define("RestaurantProfile", {
   phoneNumber: {
     type: DataTypes.STRING(20), 
     allowNull: false,
-            defaultValue: null, // مصفوفة فارغة افتراضياً
 
   },
   restaurantLogoUrl: {

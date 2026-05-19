@@ -30,6 +30,5 @@ router.patch(
 );
 
 router.patch("/edit-account", protect,  allwodTo("USER", "RESTAURANT"), editAccountValidator, editAccount);
-router.get("/verify-new-email/:token", verifyNewEmail);
 
 module.exports = router;
