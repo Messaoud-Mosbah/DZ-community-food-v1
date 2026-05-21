@@ -165,20 +165,35 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
-
 exports.editAccount = asyncHandler(async (req, res, next) => {
-  const { userName, currentPassword, newPassword, email } = req.body;
+  const { userName, currentPassword, newPassword, newPasswordConfirm, email } = req.body;
 
-  const user = await User.findByPk(req.authenticatedUser.id);
-  
-  if (user.isLoggedOut) {
-    return next(new ApiError("you logged out, please sign in again", 403));
+  // Validation
+  if (newPassword && !currentPassword) {
+    return next(new ApiError("Current password required", 400));
   }
 
+  if (newPassword && newPassword.length < 8) {
+    return next(new ApiError("New password must be at least 8 characters", 400));
+  }
+
+  if (newPassword && newPassword !== newPasswordConfirm) {
+    return next(new ApiError("Passwords do not match", 400));
+  }
+
+  const user = await User.findByPk(req.authenticatedUser.id);
+
+  if (user.isLoggedOut) {
+    return next(new ApiError("You logged out, please sign in again", 403));
+  }
+
+  // userName
   if (userName !== undefined) {
     user.userName = userName;
   }
-  if (currentPassword || newPassword) {
+
+  // password
+  if (currentPassword && newPassword) {
     const correct = await bcrypt.compare(currentPassword, user.password);
     if (!correct) {
       return next(new ApiError("Current password is incorrect", 401));
@@ -187,18 +202,12 @@ exports.editAccount = asyncHandler(async (req, res, next) => {
     user.passwordChangedAt = Date.now();
   }
 
-  if (email) {
-    const existing = await User.findOne({ where: { email } });
-    if (existing && existing.id !== user.id) {
-      return next(new ApiError("Email already in use", 400));
-    }
-
-    if (user.email === email) {
-      return next(new ApiError("This is already your current email", 400));
-    }
-
+  // email
+  if (email !== undefined) {
+   
+    
     user.email = email;
-  } 
+  }
 
   await user.save();
 
@@ -209,17 +218,29 @@ exports.editAccount = asyncHandler(async (req, res, next) => {
   });
 
   const newUser = await User.findByPk(req.authenticatedUser.id, {
-    attributes: userAttributes, // تأكد من تعريف userAttributes مسبقاً
+    attributes: userAttributes,
     include: [UserProfile, RestaurantProfile],
   });
 
   res.status(200).json({
     status: "SUCCESS",
     message: "Account changed successfully",
-    data: {
-      user: newUser,
-      jwtToken,
-    },
+    data: { user: newUser, jwtToken },
     errors: null,
   });
-}); 
+});
+//---------6-------------
+  //des     DELETE USER BY id 
+//route      delete /api/profile/delete-account
+//access     ADMIN
+exports.deleteAccount = asyncHandler(async (req, res, next) => {
+  const deleted = await User.destroy({
+    where: { id: req.authenticatedUser.id },
+  });
+if (!deleted)
+    return next(new ApiError(`No user found for id ${req.authenticatedUser.id}`, 404));
+res.status(200)
+    .json({ status: "SUCCESS", message: "User deleted successfully",data:null,errors:null });
+});
+
+

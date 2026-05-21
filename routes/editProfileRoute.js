@@ -4,14 +4,15 @@ const { protect } = require("../services/authService");
 const {
   editRestaurantProfile,
   editUserProfile,
- editAccount,
+  editAccount,
   verifyNewEmail,
   allwodTo,
+  deleteAccount
 } = require("../services/editProfile");
 const {
   RestaurantProfileValidator,
   UserProfileValidator,
-editAccountValidator
+
 } = require("../utils/validators/editProfileValidator");
 
 router.patch(
@@ -29,6 +30,7 @@ router.patch(
   editRestaurantProfile,
 );
 
-router.patch("/edit-account", protect,  allwodTo("USER", "RESTAURANT"), editAccountValidator, editAccount);
+router.patch("/edit-account", protect,  allwodTo("USER", "RESTAURANT"), editAccount);
+router.delete("/delete-account", protect,  allwodTo("USER", "RESTAURANT"), deleteAccount);
 
 module.exports = router;

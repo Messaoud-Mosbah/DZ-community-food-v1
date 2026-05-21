@@ -26,12 +26,19 @@ const app = express();
 // ── Middlewares ───────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-    origin: "*",
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "https://your-frontend.vercel.app", 
+    ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
-}));
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 if (process.env.NODE_ENV === "development") {
     app.use(morgan("dev"));
@@ -67,8 +74,7 @@ const startServer = async () => {
     try {
         await sequelize.authenticate();
         console.log("✅ Database connection established successfully.");
-
-        await sequelize.sync({ alter: true }); // ← انتقلت لهنا داخل startServer
+await sequelize.sync();
         console.log("✅ Database synced successfully.");
 
         app.listen(PORT, "0.0.0.0", () => {

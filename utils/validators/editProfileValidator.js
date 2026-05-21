@@ -20,7 +20,7 @@ exports.UserProfileValidator = [
     .withMessage("Username can only contain letters, numbers, _ and -"),
   check("profile.userBasicInformation.fullName").optional(),
 
-  check("profile.userBasicInformation.city").notEmpty().withMessage("city is required"),
+  check("profile.userBasicInformation.city").optional(),
   check("profile.userBasicInformation.phoneNumber")
     .optional()
     .matches(/^(0)(5|6|7|2|3|4)\d{8}$/)
@@ -167,24 +167,3 @@ exports.RestaurantProfileValidator = [
 ];
 
 // PASSWORD CHANGE
-exports.editAccountValidator = [
-  check("currentPassword").notEmpty().withMessage("Current password required"),
-
-  check("newPassword")
-    .notEmpty()
-    .withMessage("New password required")
-    .isLength({ min: 8 }),
-
-  check("newPasswordConfirm")
-    .notEmpty()
-    .withMessage("Confirm password required")
-    .custom((val, { req }) => {
-      if (val !== req.body.newPassword) {
-        throw new Error("Passwords do not match");
-      }
-      return true;
-    }),
-
-  validatorMiddleware,
-];
-

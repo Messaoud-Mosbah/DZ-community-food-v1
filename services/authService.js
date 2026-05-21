@@ -203,7 +203,9 @@ const signin = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Invalid email/username or password", 401));
   }
   const user = await User.findByPk(userRecord.id, {
-  });
+     include: [UserProfile, RestaurantProfile],
+  }
+);
   if (!user.isVerified) {
     return res.status(200).json({
       status: "SUCCESS",
