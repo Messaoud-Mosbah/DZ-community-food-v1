@@ -27,26 +27,36 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "https://your-frontend.vercel.app", 
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://your-frontend.vercel.app", // ← بدّلها برابط الفرونت الحقيقي
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  maxAge: 86400,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // ← معالج preflight لكل الروتات
 
 if (process.env.NODE_ENV === "development") {
-    app.use(morgan("dev"));
-    console.log(`mode: ${process.env.NODE_ENV}`);
+  app.use(morgan("dev"));
+  console.log(`mode: ${process.env.NODE_ENV}`);
 }
 
 // ── Static Files ──────────────────────────────────────
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ── Routes ────────────────────────────────────────────
 app.use("/api/users", userRouter);
@@ -62,7 +72,7 @@ app.use("/api/questions", questionRoutes);
 
 // ── 404 Handler ───────────────────────────────────────
 app.all("*", (req, res, next) => {
-    next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));
+  next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));
 });
 
 app.use(globalError);
@@ -71,24 +81,24 @@ app.use(globalError);
 const PORT = process.env.PORT || 8000;
 
 const startServer = async () => {
-    try {
-        await sequelize.authenticate();
-        console.log("✅ Database connection established successfully.");
-await sequelize.sync();
-        console.log("✅ Database synced successfully.");
+  try {
+    await sequelize.authenticate();
+    console.log("✅ Database connection established successfully.");
+    await sequelize.sync();
+    console.log("✅ Database synced successfully.");
 
-        app.listen(PORT, "0.0.0.0", () => {
-            console.log(`🚀 Server started at port ${PORT}`);
-        });
-    } catch (err) {
-        console.error("❌ Unable to connect to the database:", err);
-        process.exit(1);
-    }
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server started at port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Unable to connect to the database:", err);
+    process.exit(1);
+  }
 };
 
 startServer();
 
 process.on("unhandledRejection", (err) => {
-    console.error(`UnhandledRejection Errors: ${err.name} | ${err.message}`);
-    process.exit(1);
+  console.error(`UnhandledRejection Errors: ${err.name} | ${err.message}`);
+  process.exit(1);
 });
