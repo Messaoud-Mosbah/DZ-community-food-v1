@@ -1,6 +1,9 @@
 const path = require("path");
 const dotenv = require("dotenv");
-dotenv.config({ path: path.join(__dirname, "config.env") });
+
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config({ path: path.join(__dirname, "config.env") });
+}
 
 const express = require("express");
 const cors = require("cors");
@@ -48,7 +51,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ← معالج preflight لكل الروتات
+app.options("*", cors(corsOptions));
 
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
