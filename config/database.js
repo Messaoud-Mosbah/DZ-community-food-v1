@@ -1,7 +1,8 @@
-
 const { Sequelize } = require('sequelize');
+require('mysql2'); // ← مهم جداً على Vercel
+
 const env = process.env.NODE_ENV || 'development';
-const config = require('./config.js')[env]; 
+const config = require('./config.js')[env];
 
 const sequelize = new Sequelize(
   config.database,
