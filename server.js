@@ -80,28 +80,39 @@ app.all("*", (req, res, next) => {
 
 app.use(globalError);
 
-// ── Start Server ──────────────────────────────────────
-const PORT = process.env.PORT || 8000;
+// ── Database Connection (مع cache لتفادي إعادة الاتصال في كل request) ──
+let isConnected = false;
 
-const startServer = async () => {
+const connectDB = async () => {
+  if (isConnected) return;
   try {
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully.");
     await sequelize.sync();
     console.log("✅ Database synced successfully.");
-
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server started at port ${PORT}`);
-    });
+    isConnected = true;
   } catch (err) {
     console.error("❌ Unable to connect to the database:", err);
     process.exit(1);
   }
 };
 
-startServer();
+// ── Start Server ──────────────────────────────────────
+if (process.env.NODE_ENV !== "production") {
+  // التطوير المحلي فقط
+  const PORT = process.env.PORT || 8000;
+  connectDB().then(() => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server started at port ${PORT}`);
+    });
+  });
+} else {
+  connectDB();
+}
 
 process.on("unhandledRejection", (err) => {
   console.error(`UnhandledRejection Errors: ${err.name} | ${err.message}`);
   process.exit(1);
 });
+
+module.exports = app;
