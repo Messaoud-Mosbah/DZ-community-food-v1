@@ -46,6 +46,8 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;                
   const { count, rows: users } = await User.findAndCountAll({
   include: [UserProfile, RestaurantProfile],
+  attributes: { exclude: ['password'] },
+
     limit: limit,
     offset: offset,
     distinct: true, 
