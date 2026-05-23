@@ -1,8 +1,8 @@
-const { Sequelize } = require('sequelize');
-require('mysql2'); // ← مهم جداً على Vercel
+const { Sequelize } = require("sequelize");
+require("mysql2"); // ← مهم جداً على Vercel
 
-const env = process.env.NODE_ENV || 'development';
-const config = require('./config.js')[env];
+const env = process.env.NODE_ENV || "development";
+const config = require("./config.js")[env];
 
 const sequelize = new Sequelize(
   config.database,
@@ -16,7 +16,7 @@ const dbConnection = async () => {
     await sequelize.authenticate();
     console.log(`✅ MySQL Connected: ${config.host}`);
   } catch (error) {
-    console.error('❌ Database Connection Error:', error.message);
+    console.error("❌ Database Connection Error:", error.message);
     process.exit(1);
   }
 };
