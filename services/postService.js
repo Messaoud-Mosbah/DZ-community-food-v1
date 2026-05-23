@@ -1,23 +1,23 @@
-const { Post, PostMedia, User, UserProfile, RestaurantProfile, CommentPosts, LikePosts } = require('../models');
+const { Post, PostMedia, User, UserProfile, RestaurantProfile, CommentPosts, LikePosts, SavedPost } = require('../models');
 const ApiError = require('../utils/apiError');
 const asyncHandler = require('express-async-handler');
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/database");
 
-// ── دالة تجيب include حسب الـ role ──────────────────
+// ── HELPERS ───────────────────────────────────────────────────────
+
+// Returns author include based on known role
 const getAuthorInclude = (role) => ({
     model: User,
-    // as: 'user',
     attributes: ['id', 'userName', 'role'],
     include: role === 'RESTAURANT'
         ? [{ model: RestaurantProfile, required: false, attributes: ['restaurantName', 'restaurantLogoUrl', 'city'] }]
         : [{ model: UserProfile, required: false, attributes: ['fullName', 'profilePicture'] }]
 });
 
-// في getAllPosts و getOnePost ما نعرف الـ role — نجيب الاثنين
+// Returns author include for both roles (when role is unknown)
 const allAuthorsInclude = {
     model: User,
-    // as: 'user',
     attributes: ['id', 'userName', 'role'],
     include: [
         { model: UserProfile, required: false, attributes: ['fullName', 'profilePicture'] },
@@ -25,8 +25,9 @@ const allAuthorsInclude = {
     ]
 };
 
-// ── 1. POSTS CRUD ────────────────────────────────────
+// ── 1. POSTS CRUD ─────────────────────────────────────────────────
 
+// 1.1 Create a new post with optional images or video
 const createPost = asyncHandler(async (req, res) => {
     const images = req.files?.images || [];
     const video = req.files?.video?.[0];
@@ -61,6 +62,7 @@ const createPost = asyncHandler(async (req, res) => {
     res.status(201).json({ status: 'SUCCESS', data: { post: fullPost } });
 });
 
+// 1.2 Get all posts with cursor-based pagination ordered by pin then date
 const getAllPosts = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const cursor = req.query.cursor;
@@ -94,6 +96,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
     res.status(200).json({ status: "SUCCESS", data: { results: posts.length, nextCursor, posts } });
 });
 
+// 1.3 Get current user posts with cursor-based pagination
 const getMyPosts = asyncHandler(async (req, res) => {
     const { id, role } = req.authenticatedUser;
     const cursor = req.query.cursor ? new Date(req.query.cursor) : null;
@@ -114,6 +117,7 @@ const getMyPosts = asyncHandler(async (req, res) => {
     res.status(200).json({ status: "SUCCESS", data: { results: posts.length, nextCursor, posts } });
 });
 
+// 1.4 Get a single post by id
 const getOnePost = asyncHandler(async (req, res, next) => {
     const post = await Post.findByPk(req.params.id, {
         include: [{ model: PostMedia, as: 'media' }, allAuthorsInclude]
@@ -123,6 +127,7 @@ const getOnePost = asyncHandler(async (req, res, next) => {
     res.status(200).json({ status: 'SUCCESS', data: { post } });
 });
 
+// 1.5 Update a post with option to keep existing media or add new
 const updatePost = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
     const { title, description, contentType, keptMediaIds } = req.body;
@@ -179,6 +184,7 @@ const updatePost = asyncHandler(async (req, res, next) => {
     }
 });
 
+// 1.6 Delete a post (owner only)
 const deletePost = asyncHandler(async (req, res, next) => {
     const { id: authId } = req.authenticatedUser;
 
@@ -190,6 +196,7 @@ const deletePost = asyncHandler(async (req, res, next) => {
     res.status(200).json({ status: "SUCCESS", message: "Post deleted successfully" });
 });
 
+// 1.7 Toggle pin status of a post
 const togglePin = asyncHandler(async (req, res, next) => {
     const { id: authId } = req.authenticatedUser;
 
@@ -202,8 +209,9 @@ const togglePin = asyncHandler(async (req, res, next) => {
     res.status(200).json({ status: 'SUCCESS', message: post.isPinned ? 'Post pinned' : 'Post unpinned', data: { post } });
 });
 
-// ── 2. COMMENTS SECTION ──────────────────────────────
+// ── 2. COMMENTS SECTION ───────────────────────────────────────────
 
+// 2.1 Add a comment to a post
 const createComment = asyncHandler(async (req, res, next) => {
     const { text } = req.body;
     const { postId } = req.params;
@@ -216,6 +224,7 @@ const createComment = asyncHandler(async (req, res, next) => {
     res.status(201).json({ status: 'SUCCESS', message: 'Comment added', data: { comment } });
 });
 
+// 2.2 Get all comments for a specific post
 const getPostComments = asyncHandler(async (req, res) => {
     const comments = await CommentPosts.findAll({
         where: { postId: req.params.postId },
@@ -226,6 +235,7 @@ const getPostComments = asyncHandler(async (req, res) => {
     res.status(200).json({ status: 'SUCCESS', data: { results: comments.length, comments } });
 });
 
+// 2.3 Delete a comment (comment owner or post owner)
 const deleteComment = asyncHandler(async (req, res, next) => {
     const comment = await CommentPosts.findByPk(req.params.id);
     if (!comment) return next(new ApiError('Comment not found', 404));
@@ -241,8 +251,9 @@ const deleteComment = asyncHandler(async (req, res, next) => {
     res.status(200).json({ status: 'SUCCESS', message: 'Comment deleted' });
 });
 
-// ── 3. LIKES SECTION ─────────────────────────────────
+// ── 3. LIKES SECTION ──────────────────────────────────────────────
 
+// 3.1 Toggle like on a post
 const toggleLike = asyncHandler(async (req, res, next) => {
     const { postId } = req.params;
     const userId = req.authenticatedUser.id;
@@ -261,6 +272,7 @@ const toggleLike = asyncHandler(async (req, res, next) => {
     }
 });
 
+// 3.2 Check if current user liked a specific post
 const checkIfLiked = asyncHandler(async (req, res) => {
     const like = await LikePosts.findOne({
         where: { userId: req.authenticatedUser.id, postId: req.params.postId }
@@ -268,17 +280,64 @@ const checkIfLiked = asyncHandler(async (req, res) => {
     res.status(200).json({ status: 'SUCCESS', data: { isLiked: !!like } });
 });
 
+// 3.3 Get all posts liked by the current user
+const getMyLikedPosts = asyncHandler(async (req, res) => {
+    const likedPosts = await LikePosts.findAll({
+        where: { userId: req.authenticatedUser.id },
+        include: [{ model: Post, include: [allAuthorsInclude] }],
+        order: [['createdAt', 'DESC']]
+    });
+    res.status(200).json({ status: 'SUCCESS', results: likedPosts.length, data: { likedPosts } });
+});
+
+// ── 4. SAVED POSTS SECTION ────────────────────────────────────────
+
+// 4.1 Save a post to saved list
+const savePost = asyncHandler(async (req, res, next) => {
+    const { postId } = req.params;
+    const userId = req.authenticatedUser.id;
+
+    const post = await Post.findByPk(postId);
+    if (!post) return next(new ApiError('Post not found', 404));
+
+    const alreadySaved = await SavedPost.findOne({ where: { userId, postId } });
+    if (alreadySaved) return next(new ApiError('Post already saved', 400));
+
+    await SavedPost.create({ userId, postId });
+    res.status(201).json({ status: 'SUCCESS', message: 'Post saved to saved posts' });
+});
+
+// 4.2 Remove a post from saved list
+const unsavePost = asyncHandler(async (req, res, next) => {
+    const { postId } = req.params;
+    const userId = req.authenticatedUser.id;
+
+    const savedItem = await SavedPost.findOne({ where: { userId, postId } });
+    if (!savedItem) return next(new ApiError('Post not found in saved list', 404));
+
+    await savedItem.destroy();
+    res.status(200).json({ status: 'SUCCESS', message: 'Post removed from saved posts' });
+});
+
+// 4.3 Get all saved posts for the current user
+const getMySavedPosts = asyncHandler(async (req, res) => {
+    const savedPosts = await SavedPost.findAll({
+        where: { userId: req.authenticatedUser.id },
+        include: [{ model: Post, include: [allAuthorsInclude] }],
+        order: [['createdAt', 'DESC']]
+    });
+    res.status(200).json({ status: 'SUCCESS', results: savedPosts.length, data: { savedPosts } });
+});
+
+// ── EXPORTS ───────────────────────────────────────────────────────
 module.exports = {
-    createPost,
-    getAllPosts,
-    getMyPosts,
-    getOnePost,
-    updatePost,
-    deletePost,
-    togglePin,
-    createComment,
-    getPostComments,
-    deleteComment,
-    toggleLike,
-    checkIfLiked
+    // Posts CRUD
+    createPost, getAllPosts, getMyPosts, getOnePost,
+    updatePost, deletePost, togglePin,
+    // Comments
+    createComment, getPostComments, deleteComment,
+    // Likes
+    toggleLike, checkIfLiked, getMyLikedPosts,
+    // Saved
+    savePost, unsavePost, getMySavedPosts
 };

@@ -99,7 +99,6 @@ const connectDB = async () => {
 
 // ── Start Server ──────────────────────────────────────
 if (process.env.NODE_ENV !== "production") {
-  // التطوير المحلي فقط
   const PORT = process.env.PORT || 8000;
   connectDB().then(() => {
     app.listen(PORT, "0.0.0.0", () => {

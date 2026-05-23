@@ -1,11 +1,9 @@
 const express = require("express");
 const router = express.Router();
-
 const postService = require("../services/postService");
 const { protect } = require("../services/authService");
 const { allwodTo } = require("../services/editProfile");
 const upload = require("../middlewares/uploadMiddleware");
-
 const {
   validateCreatePost,
   validateUpdatePost,
@@ -13,46 +11,36 @@ const {
   validateidpost,
 } = require("../utils/validators/postValidation");
 
+const uploadFields = upload.fields([{ name: "images", maxCount: 10 }, { name: "video", maxCount: 1 }]);
 
-// ── 1. All Posts ──────────────────────────────────────────────────
-router.route("/")
-  .get(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateGetPosts, postService.getAllPosts)
-  .post(
-    protect,
-    allwodTo("USER", "RESTAURANT", "ADMIN"),
-    upload.fields([{ name: "images", maxCount: 10 }, { name: "video", maxCount: 1 }]),
-    validateCreatePost,
-    postService.createPost
-  );
+// ── 1. ALL POSTS ──────────────────────────────────────────────────
+router.get("/",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateGetPosts, postService.getAllPosts);
+router.post("/", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), uploadFields, validateCreatePost, postService.createPost);
 
-// ── 2. My Posts (Studio) ──────────────────────────────────────────
+// ── 2. MY POSTS ───────────────────────────────────────────────────
 router.get("/my-posts", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getMyPosts);
 
-// ── 3. Pin Toggle ─────────────────────────────────────────────────
+// ── 3. PIN ────────────────────────────────────────────────────────
 router.get("/pin/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.togglePin);
 
-
-router.route("/:postId/comments")
-  .get(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getPostComments)
-  .post(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.createComment);
-
-router.delete("/comments/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.deleteComment);
-
-// @desc      (Like/Unlike)
+// ── 4. LIKES ──────────────────────────────────────────────────────
 router.post("/:postId/toggle-like", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.toggleLike);
+router.get("/liked",                protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getMyLikedPosts);
+router.get("/:postId/check-like",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.checkIfLiked);
 
-router.get("/:postId/check-like", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.checkIfLiked);
+// ── 5. SAVED POSTS ────────────────────────────────────────────────
+router.post("/save/:postId",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.savePost);
+router.delete("/save/:postId", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.unsavePost);
+router.get("/saved",           protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getMySavedPosts);
 
-// ── 6. Single Post (CRUD) ─────────────────────────────────────────
-router.route("/:id")
-  .get(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateidpost, postService.getOnePost)
-  .patch(
-    protect,
-    allwodTo("USER", "RESTAURANT", "ADMIN"),
-    upload.fields([{ name: "images", maxCount: 10 }, { name: "video", maxCount: 1 }]),
-    validateUpdatePost,
-    postService.updatePost
-  )
-  .delete(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateidpost, postService.deletePost);
+// ── 6. COMMENTS ───────────────────────────────────────────────────
+router.get("/:postId/comments",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getPostComments);
+router.post("/:postId/comments", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.createComment);
+router.delete("/comments/:id",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.deleteComment);
+
+// ── 7. SINGLE POST (CRUD) ─────────────────────────────────────────
+router.get("/:id",    protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateidpost, postService.getOnePost);
+router.patch("/:id",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), uploadFields, validateUpdatePost, postService.updatePost);
+router.delete("/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateidpost, postService.deletePost);
 
 module.exports = router;

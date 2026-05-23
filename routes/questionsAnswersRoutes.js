@@ -12,40 +12,34 @@ const {
     validateGetQuestions,
 } = require("../utils/validators/questionValidator");
 
-// ── 1. ALL QUESTIONS ─────────────────────────────────────────────
-router.route("/")
-    .get(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateGetQuestions, questionService.getAllQuestions)
-    .post(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateCreateQuestion, questionService.createQuestion);
+// ── 1. ALL QUESTIONS ──────────────────────────────────────────────
+router.get("/",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateGetQuestions, questionService.getAllQuestions);
+router.post("/", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateCreateQuestion, questionService.createQuestion);
 
 // ── 2. MY QUESTIONS & MY COMMENTS ────────────────────────────────
 router.get("/my-questions", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.getMyQuestions);
-router.get("/my-comments", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.getMyQuestionComments);
+router.get("/my-comments",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.getMyQuestionComments);
 
-// ── 3. SAVED QUESTIONS ───────────────────────────────────────────
-router.get("/saved", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.getMySavedQuestions);
-
-// ── 4. SINGLE QUESTION (CRUD) ────────────────────────────────────
-router.route("/:id")
-    .get(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateIdQuestion, questionService.getOneQuestion)
-    .patch(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateUpdateQuestion, questionService.updateQuestion)
-    .delete(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateIdQuestion, questionService.deleteQuestion);
-
-// ── 5. SAVE & UNSAVE OPERATIONS ──────────────────────────────────
-router.post("/save/:questionId", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.saveQuestion);
+// ── 3. SAVED QUESTIONS ────────────────────────────────────────────
+router.get("/saved",              protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.getMySavedQuestions);
+router.post("/save/:questionId",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.saveQuestion);
 router.delete("/save/:questionId", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.unsaveQuestion);
 
-// ── 6. PIN TOGGLE ────────────────────────────────────────────────
+// ── 4. PIN TOGGLE ─────────────────────────────────────────────────
 router.patch("/pin/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateIdQuestion, questionService.togglePin);
 
-// ── 7. COMMENTS ON QUESTIONS ─────────────────────────────────────
-router.route("/:questionId/comments")
-    .get(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.getQuestionComments)
-    .post(protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.createQuestionComment);
-
-router.delete("/comments/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.deleteQuestionComment);
-
-// ── 8. LIKES ON QUESTIONS ────────────────────────────────────────
+// ── 5. LIKES ──────────────────────────────────────────────────────
 router.post("/:questionId/toggle-like", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.toggleQuestionLike);
-router.get("/:questionId/check-like", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.checkIfLiked);
+router.get("/:questionId/check-like",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.checkIfLiked);
+
+// ── 6. COMMENTS ───────────────────────────────────────────────────
+router.get("/:questionId/comments",    protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.getQuestionComments);
+router.post("/:questionId/comments",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.createQuestionComment);
+router.delete("/comments/:id",         protect, allwodTo("USER", "RESTAURANT", "ADMIN"), questionService.deleteQuestionComment);
+
+// ── 7. SINGLE QUESTION (CRUD) ─────────────────────────────────────
+router.get("/:id",    protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateIdQuestion, questionService.getOneQuestion);
+router.patch("/:id",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateUpdateQuestion, questionService.updateQuestion);
+router.delete("/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateIdQuestion, questionService.deleteQuestion);
 
 module.exports = router;
