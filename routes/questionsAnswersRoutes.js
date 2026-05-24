@@ -2,38 +2,30 @@ const express = require("express");
 const router = express.Router();
 const q = require("../services/questionsAnswersServices");
 const { protect, allwodTo } = require("../services/authService");
-const {
-    validateCreateQuestion,
-    validateUpdateQuestion,
-    validateIdQuestion,
-    validateGetQuestions,
-} = require("../utils/validators/questionValidator");
 
 const auth = [protect, allwodTo("USER", "RESTAURANT", "ADMIN")];
 
 // ── QUESTIONS ─────────────────────────────────────────────────────
-router.get("/",    ...auth, validateGetQuestions, q.getAllQuestions);
-router.post("/",   ...auth, validateCreateQuestion, q.createQuestion);
-router.get("/my-questions", ...auth, q.getMyQuestions);
-router.get("/my-comments",  ...auth, q.getMyQuestionComments);
+router.get("/",           ...auth, q.getAllQuestions);
+router.post("/",          ...auth, q.createQuestion);
+router.get("/my",         ...auth, q.getMyQuestions);
+router.get("/pin/:id",    ...auth, q.togglePin);
+router.get("/:id",        ...auth, q.getOneQuestion);
+router.patch("/:id",      ...auth, q.updateQuestion);
+router.delete("/:id",     ...auth, q.deleteQuestion);
+
+// ── LIKES ─────────────────────────────────────────────────────────
+router.post("/:questionId/toggle-like", ...auth, q.toggleQuestionLike);
 
 // ── SAVED ─────────────────────────────────────────────────────────
-router.get("/saved",               ...auth, q.getMySavedQuestions);
 router.post("/save/:questionId",   ...auth, q.saveQuestion);
 router.delete("/save/:questionId", ...auth, q.unsaveQuestion);
-
-// ── PIN & LIKES ───────────────────────────────────────────────────
-router.patch("/pin/:id",                ...auth, validateIdQuestion, q.togglePin);
-router.post("/:questionId/toggle-like", ...auth, q.toggleQuestionLike);
+router.get("/saved",               ...auth, q.getMySavedQuestions);
 
 // ── COMMENTS ──────────────────────────────────────────────────────
 router.get("/:questionId/comments",  ...auth, q.getQuestionComments);
 router.post("/:questionId/comments", ...auth, q.createQuestionComment);
 router.delete("/comments/:id",       ...auth, q.deleteQuestionComment);
-
-// ── SINGLE QUESTION ───────────────────────────────────────────────
-router.get("/:id",    ...auth, validateIdQuestion, q.getOneQuestion);
-router.patch("/:id",  ...auth, validateUpdateQuestion, q.updateQuestion);
-router.delete("/:id", ...auth, validateIdQuestion, q.deleteQuestion);
+router.get("/my/comments",           ...auth, q.getMyQuestionComments);
 
 module.exports = router;
