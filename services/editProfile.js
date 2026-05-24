@@ -1,246 +1,116 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 const ApiError = require("../utils/apiError");
-const crypto = require("crypto");
-const { Op } = require("sequelize");
-
-const jwt = require("jsonwebtoken");
-const { sendEmail } = require("../utils/sendEmail");
+const { User, UserProfile, RestaurantProfile } = require("../models");
 const { GENERATE_TOKEN } = require("../utils/createToken");
 
-const { User, UserProfile, RestaurantProfile } = require("../models");
 const userAttributes = [
-  "id",
-  "userName",
-  "email",
-  "role",
-  "status",
-  "isVerified",
-  "createdAt",
-  "isLoggedOut",
-  "isOnboardingCompleted",
-    "pendingEmail",
-
-  "updatedAt",
-  "slug",
+    "id", "userName", "email", "role", "status",
+    "isVerified", "isLoggedOut", "isOnboardingCompleted",
+    "pendingEmail", "slug", "followersCount", "followingCount",
+    "createdAt", "updatedAt"
 ];
-// check if the user has the right role before doing anything
+
+const updateFields = (target, source, fields) => {
+    fields.forEach(field => { if (source[field] !== undefined) target[field] = source[field]; });
+};
+
+// ── Permissions ───────────────────────────────────────────────────
 
 exports.allwodTo = (...roles) =>
-  asyncHandler(async (req, res, next) => {
-    if (!req.authenticatedUser)
-      return next(new ApiError("You are not logged in", 401));
-    if (!roles.includes(req.authenticatedUser.role))
-      return next(
-        new ApiError("You are not allowed to access this route", 403)
-      );
-    next();
-  });
+    asyncHandler(async (req, res, next) => {
+        if (!req.authenticatedUser) return next(new ApiError("You are not logged in", 401));
+        if (!roles.includes(req.authenticatedUser.role)) return next(new ApiError("You are not allowed to access this route", 403));
+        next();
+    });
 
-//edit user profile
+// ── Edit User Profile ─────────────────────────────────────────────
+
 exports.editUserProfile = asyncHandler(async (req, res, next) => {
-  const userId = req.authenticatedUser.id;
-  const user = await User.findByPk(userId);
-  if (user.isLoggedOut) {
-    return next(new ApiError("you logged out ,please sign in again", 403));
-  }
-  let profile = await UserProfile.findOne({ where: { userId } });
-  if (!profile) profile = await UserProfile.create({ userId });
-  const { userBasicInformation, userUsagePreferences } = req.body.profile || {};
-  if (userBasicInformation) {
-    const basicFields = [
-      "fullName",
-      "city",
-      "phoneNumber",
-      "bio",
-      "profilePicture",
-    ];
-    basicFields.forEach((field) => {
-      if (userBasicInformation[field] !== undefined) {
-        profile[field] = userBasicInformation[field];
-      }
-    });
-  }
-  if (userUsagePreferences) {
-    const prefFields = ["usageGoal", "kitchenCategory"];
-    prefFields.forEach((field) => {
-      if (userUsagePreferences[field] !== undefined) {
-        profile[field] = userUsagePreferences[field];
-      }
-    });
-  }
+    const userId = req.authenticatedUser.id;
+    const user = await User.findByPk(userId);
+    if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
-  await profile.save();
-  await user.save();
+    let profile = await UserProfile.findOne({ where: { userId } });
+    if (!profile) profile = await UserProfile.create({ userId });
 
-  const newUser = await User.findByPk(userId, {
-    attributes: userAttributes,
-    include: [UserProfile, RestaurantProfile],
-  });
-  res.status(200).json({
-    status: "SUCCESS",
-    message: "User profile updated successfully",
-    data: {
-      user: newUser,
-    },
-    errors: null,
-  });
+    const { userBasicInformation, userUsagePreferences } = req.body.profile || {};
+    if (userBasicInformation) updateFields(profile, userBasicInformation, ["fullName", "city", "phoneNumber", "bio", "profilePicture"]);
+    if (userUsagePreferences) updateFields(profile, userUsagePreferences, ["usageGoal", "kitchenCategory"]);
+
+    await profile.save();
+
+    const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
+    res.status(200).json({ status: "SUCCESS", message: "User profile updated successfully", data: { user: newUser }, errors: null });
 });
+
+// ── Edit Restaurant Profile ───────────────────────────────────────
 
 exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
-  const userId = req.authenticatedUser.id;
-  const user = await User.findByPk(userId);
-  if (user.isLoggedOut) {
-    return next(new ApiError("you logged out ,please sign in again", 403));
-  }
+    const userId = req.authenticatedUser.id;
+    const user = await User.findByPk(userId);
+    if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
-  let profile = await RestaurantProfile.findOne({ where: { userId } });
-
-  if (!profile) {
-    profile = await RestaurantProfile.create({
-      userId,
-      services: {
-        dineIn: "NO",
-        takeAway: "NO",
-        delivery: "NO",
-        reservation: "NO",
-        parkAvailability: "NO",
-      },
-      workingDays: [],
-      kitchenCategory: [],
-    });
-  }
-  const {
-    restaurantBasicInformation,
-    restaurantLocationAndContact,
-    restaurantDetails,
-    restaurantServices,
-  } = req.body.profile || {};
-
-  if (restaurantBasicInformation) {
-    const basicFields = [
-      "restaurantName",
-      "businessEmail",
-      "phoneNumber",
-      "restaurantLogoUrl",
-      "bio"
-    ];
-    basicFields.forEach((field) => {
-      if (restaurantBasicInformation[field] !== undefined)
-        profile[field] = restaurantBasicInformation[field];
-    });
-  }
-
-  if (restaurantLocationAndContact) {
-    const locationFields = ["city", "street", "postalCode", "googleMapsLink"];
-    locationFields.forEach((field) => {
-      if (restaurantLocationAndContact[field] !== undefined)
-        profile[field] = restaurantLocationAndContact[field];
-    });
-  }
-
-  if (restaurantDetails) {
-    if (restaurantDetails.kitchenCategory !== undefined)
-      profile.kitchenCategory = restaurantDetails.kitchenCategory;
-    if (restaurantDetails.workingDays !== undefined)
-      profile.workingDays = restaurantDetails.workingDays;}
-    if (restaurantServices !== undefined) {
-      profile.services = restaurantServices;
-
+    let profile = await RestaurantProfile.findOne({ where: { userId } });
+    if (!profile) {
+        profile = await RestaurantProfile.create({
+            userId,
+            services: { dineIn: "NO", takeAway: "NO", delivery: "NO", reservation: "NO", parkAvailability: "NO" },
+            workingDays: [],
+            kitchenCategory: []
+        });
     }
 
+    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails, restaurantServices } = req.body.profile || {};
 
-  await profile.save();
-  await user.save();
-  
-  const newUser = await User.findByPk(userId, {
-    attributes: userAttributes,
-    include: [UserProfile, RestaurantProfile],
-  });
+    if (restaurantBasicInformation) updateFields(profile, restaurantBasicInformation, ["restaurantName", "businessEmail", "phoneNumber", "restaurantLogoUrl", "bio"]);
+    if (restaurantLocationAndContact) updateFields(profile, restaurantLocationAndContact, ["city", "street", "postalCode", "googleMapsLink"]);
+    if (restaurantDetails) {
+        if (restaurantDetails.kitchenCategory !== undefined) profile.kitchenCategory = restaurantDetails.kitchenCategory;
+        if (restaurantDetails.workingDays !== undefined) profile.workingDays = restaurantDetails.workingDays;
+    }
+    if (restaurantServices !== undefined) profile.services = restaurantServices;
 
-  res.status(200).json({
-    status: "SUCCESS",
-    message: "Restaurant profile updated successfully",
-    data: { user: newUser },
-    errors: null,
-  });
+    await profile.save();
+
+    const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
+    res.status(200).json({ status: "SUCCESS", message: "Restaurant profile updated successfully", data: { user: newUser }, errors: null });
 });
+
+// ── Edit Account ──────────────────────────────────────────────────
+
 exports.editAccount = asyncHandler(async (req, res, next) => {
-  const { userName, currentPassword, newPassword, newPasswordConfirm, email } = req.body;
+    const { userName, currentPassword, newPassword, newPasswordConfirm, email } = req.body;
 
-  // Validation
-  if (newPassword && !currentPassword) {
-    return next(new ApiError("Current password required", 400));
-  }
+    if (newPassword && !currentPassword) return next(new ApiError("Current password required", 400));
+    if (newPassword && newPassword.length < 8) return next(new ApiError("New password must be at least 8 characters", 400));
+    if (newPassword && newPassword !== newPasswordConfirm) return next(new ApiError("Passwords do not match", 400));
 
-  if (newPassword && newPassword.length < 8) {
-    return next(new ApiError("New password must be at least 8 characters", 400));
-  }
+    const user = await User.findByPk(req.authenticatedUser.id);
+    if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
-  if (newPassword && newPassword !== newPasswordConfirm) {
-    return next(new ApiError("Passwords do not match", 400));
-  }
+    if (userName !== undefined) user.userName = userName;
+    if (email !== undefined) user.email = email;
 
-  const user = await User.findByPk(req.authenticatedUser.id);
-
-  if (user.isLoggedOut) {
-    return next(new ApiError("You logged out, please sign in again", 403));
-  }
-
-  // userName
-  if (userName !== undefined) {
-    user.userName = userName;
-  }
-
-  // password
-  if (currentPassword && newPassword) {
-    const correct = await bcrypt.compare(currentPassword, user.password);
-    if (!correct) {
-      return next(new ApiError("Current password is incorrect", 401));
+    if (currentPassword && newPassword) {
+        const correct = await bcrypt.compare(currentPassword, user.password);
+        if (!correct) return next(new ApiError("Current password is incorrect", 401));
+        user.password = newPassword;
+        user.passwordChangedAt = Date.now();
     }
-    user.password = newPassword;
-    user.passwordChangedAt = Date.now();
-  }
 
-  // email
-  if (email !== undefined) {
-   
-    
-    user.email = email;
-  }
+    await user.save();
 
-  await user.save();
+    const jwtToken = await GENERATE_TOKEN({ email: user.email, id: user.id, userName: user.userName });
+    const newUser = await User.findByPk(user.id, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
 
-  const jwtToken = await GENERATE_TOKEN({
-    email: user.email,
-    id: user.id,
-    userName: user.userName,
-  });
-
-  const newUser = await User.findByPk(req.authenticatedUser.id, {
-    attributes: userAttributes,
-    include: [UserProfile, RestaurantProfile],
-  });
-
-  res.status(200).json({
-    status: "SUCCESS",
-    message: "Account changed successfully",
-    data: { user: newUser, jwtToken },
-    errors: null,
-  });
+    res.status(200).json({ status: "SUCCESS", message: "Account updated successfully", data: { user: newUser, jwtToken }, errors: null });
 });
-//---------6-------------
-  //des     DELETE USER BY id 
-//route      delete /api/profile/delete-account
-//access     ADMIN
+
+// ── Delete Account ────────────────────────────────────────────────
+
 exports.deleteAccount = asyncHandler(async (req, res, next) => {
-  const deleted = await User.destroy({
-    where: { id: req.authenticatedUser.id },
-  });
-if (!deleted)
-    return next(new ApiError(`No user found for id ${req.authenticatedUser.id}`, 404));
-res.status(200)
-    .json({ status: "SUCCESS", message: "User deleted successfully",data:null,errors:null });
+    const deleted = await User.destroy({ where: { id: req.authenticatedUser.id } });
+    if (!deleted) return next(new ApiError("User not found", 404));
+    res.status(200).json({ status: "SUCCESS", message: "Account deleted successfully", data: null, errors: null });
 });
-
-

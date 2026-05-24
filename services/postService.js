@@ -1,4 +1,4 @@
-const { Post, PostMedia, User, UserProfile, RestaurantProfile, CommentPosts, LikePosts, SavedPost } = require('../models');
+const { Post, PostMedia, User, UserProfile, RestaurantProfile, CommentPosts, LikePosts, SavedPost, Follow } = require('../models');
 const ApiError = require('../utils/apiError');
 const asyncHandler = require('express-async-handler');
 const { Op } = require("sequelize");
@@ -6,7 +6,6 @@ const { sequelize } = require("../config/database");
 
 // ── HELPERS ───────────────────────────────────────────────────────
 
-// Returns author include based on known role
 const getAuthorInclude = (role) => ({
     model: User,
     attributes: ['id', 'userName', 'role'],
@@ -15,7 +14,6 @@ const getAuthorInclude = (role) => ({
         : [{ model: UserProfile, required: false, attributes: ['fullName', 'profilePicture'] }]
 });
 
-// Returns author include for both roles (when role is unknown)
 const allAuthorsInclude = {
     model: User,
     attributes: ['id', 'userName', 'role'],
@@ -25,9 +23,36 @@ const allAuthorsInclude = {
     ]
 };
 
+// ✅ Helper يضيف isLiked و isFollowing لكل post
+const attachMetaToPosts = async (posts, currentUserId) => {
+    if (!currentUserId) return posts.map(p => ({ ...p.toJSON(), isLiked: false, isFollowing: false }));
+
+    const postIds = posts.map(p => p.id);
+    const authorIds = posts.map(p => p.userId);
+
+    const [likedPosts, followedUsers] = await Promise.all([
+        LikePosts.findAll({
+            where: { userId: currentUserId, postId: postIds },
+            attributes: ['postId']
+        }),
+        Follow.findAll({
+            where: { followerId: currentUserId, followingId: authorIds },
+            attributes: ['followingId']
+        })
+    ]);
+
+    const likedSet = new Set(likedPosts.map(l => l.postId));
+    const followedSet = new Set(followedUsers.map(f => f.followingId));
+
+    return posts.map(p => ({
+        ...p.toJSON(),
+        isLiked: likedSet.has(p.id),
+        isFollowing: followedSet.has(p.userId)
+    }));
+};
+
 // ── 1. POSTS CRUD ─────────────────────────────────────────────────
 
-// 1.1 Create a new post with optional images or video
 const createPost = asyncHandler(async (req, res) => {
     const images = req.files?.images || [];
     const video = req.files?.video?.[0];
@@ -61,7 +86,7 @@ const createPost = asyncHandler(async (req, res) => {
 
     res.status(201).json({ status: 'SUCCESS', data: { post: fullPost } });
 });
-//1-2 get All posts
+
 const getAllPosts = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const cursor = req.query.cursor;
@@ -87,18 +112,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
         include: [{ model: PostMedia, as: "media" }, allAuthorsInclude],
     });
 
-    const postsWithLikes = await Promise.all(
-        posts.map(async (post) => {
-            let isLiked = false;
-            if (currentUserId) {
-                const like = await LikePosts.findOne({
-                    where: { userId: currentUserId, postId: post.id }
-                });
-                isLiked = !!like;
-            }
-            return { ...post.toJSON(), isLiked };
-        })
-    );
+    const postsWithMeta = await attachMetaToPosts(posts, currentUserId);
 
     let nextCursor = null;
     if (posts.length > 0) {
@@ -108,10 +122,10 @@ const getAllPosts = asyncHandler(async (req, res) => {
 
     res.status(200).json({ 
         status: "SUCCESS", 
-        data: { results: posts.length, nextCursor, posts: postsWithLikes } 
+        data: { results: posts.length, nextCursor, posts: postsWithMeta } 
     });
 });
-// 1.3 Get current user posts with cursor-based pagination
+
 const getMyPosts = asyncHandler(async (req, res) => {
     const { id, role } = req.authenticatedUser;
     const cursor = req.query.cursor ? new Date(req.query.cursor) : null;
@@ -127,22 +141,25 @@ const getMyPosts = asyncHandler(async (req, res) => {
         include: [{ model: PostMedia, as: "media" }, getAuthorInclude(role)]
     });
 
+    const postsWithMeta = await attachMetaToPosts(posts, id);
     const nextCursor = posts.length ? posts[posts.length - 1].createdAt : null;
 
-    res.status(200).json({ status: "SUCCESS", data: { results: posts.length, nextCursor, posts } });
+    res.status(200).json({ status: "SUCCESS", data: { results: posts.length, nextCursor, posts: postsWithMeta } });
 });
 
-// 1.4 Get a single post by id
 const getOnePost = asyncHandler(async (req, res, next) => {
+    const currentUserId = req.authenticatedUser?.id;
+
     const post = await Post.findByPk(req.params.id, {
         include: [{ model: PostMedia, as: 'media' }, allAuthorsInclude]
     });
     if (!post) return next(new ApiError('Post not found', 404));
 
-    res.status(200).json({ status: 'SUCCESS', data: { post } });
+    const [postWithMeta] = await attachMetaToPosts([post], currentUserId);
+
+    res.status(200).json({ status: 'SUCCESS', data: { post: postWithMeta } });
 });
 
-// 1.5 Update a post with option to keep existing media or add new
 const updatePost = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
     const { title, description, contentType, keptMediaIds } = req.body;
@@ -199,7 +216,6 @@ const updatePost = asyncHandler(async (req, res, next) => {
     }
 });
 
-// 1.6 Delete a post (owner only)
 const deletePost = asyncHandler(async (req, res, next) => {
     const { id: authId } = req.authenticatedUser;
 
@@ -211,7 +227,6 @@ const deletePost = asyncHandler(async (req, res, next) => {
     res.status(200).json({ status: "SUCCESS", message: "Post deleted successfully" });
 });
 
-// 1.7 Toggle pin status of a post
 const togglePin = asyncHandler(async (req, res, next) => {
     const { id: authId } = req.authenticatedUser;
 
@@ -226,7 +241,6 @@ const togglePin = asyncHandler(async (req, res, next) => {
 
 // ── 2. COMMENTS SECTION ───────────────────────────────────────────
 
-// 2.1 Add a comment to a post
 const createComment = asyncHandler(async (req, res, next) => {
     const { text } = req.body;
     const { postId } = req.params;
@@ -239,7 +253,6 @@ const createComment = asyncHandler(async (req, res, next) => {
     res.status(201).json({ status: 'SUCCESS', message: 'Comment added', data: { comment } });
 });
 
-// 2.2 Get all comments for a specific post
 const getPostComments = asyncHandler(async (req, res) => {
     const comments = await CommentPosts.findAll({
         where: { postId: req.params.postId },
@@ -250,7 +263,6 @@ const getPostComments = asyncHandler(async (req, res) => {
     res.status(200).json({ status: 'SUCCESS', data: { results: comments.length, comments } });
 });
 
-// 2.3 Delete a comment (comment owner or post owner)
 const deleteComment = asyncHandler(async (req, res, next) => {
     const comment = await CommentPosts.findByPk(req.params.id);
     if (!comment) return next(new ApiError('Comment not found', 404));
@@ -268,7 +280,6 @@ const deleteComment = asyncHandler(async (req, res, next) => {
 
 // ── 3. LIKES SECTION ──────────────────────────────────────────────
 
-// 3.1 Toggle like on a post
 const toggleLike = asyncHandler(async (req, res, next) => {
     const { postId } = req.params;
     const userId = req.authenticatedUser.id;
@@ -287,21 +298,23 @@ const toggleLike = asyncHandler(async (req, res, next) => {
     }
 });
 
-
-
-// 3.2 Get all posts liked by the current user
 const getMyLikedPosts = asyncHandler(async (req, res) => {
+    const currentUserId = req.authenticatedUser.id;
+
     const likedPosts = await LikePosts.findAll({
-        where: { userId: req.authenticatedUser.id },
+        where: { userId: currentUserId },
         include: [{ model: Post, include: [allAuthorsInclude] }],
         order: [['createdAt', 'DESC']]
     });
-    res.status(200).json({ status: 'SUCCESS', results: likedPosts.length, data: { likedPosts } });
+
+    const posts = likedPosts.map(l => l.Post);
+    const postsWithMeta = await attachMetaToPosts(posts, currentUserId);
+
+    res.status(200).json({ status: 'SUCCESS', results: likedPosts.length, data: { likedPosts: postsWithMeta } });
 });
 
 // ── 4. SAVED POSTS SECTION ────────────────────────────────────────
 
-// 4.1 Save a post to saved list
 const savePost = asyncHandler(async (req, res, next) => {
     const { postId } = req.params;
     const userId = req.authenticatedUser.id;
@@ -316,7 +329,6 @@ const savePost = asyncHandler(async (req, res, next) => {
     res.status(201).json({ status: 'SUCCESS', message: 'Post saved to saved posts' });
 });
 
-// 4.2 Remove a post from saved list
 const unsavePost = asyncHandler(async (req, res, next) => {
     const { postId } = req.params;
     const userId = req.authenticatedUser.id;
@@ -328,25 +340,26 @@ const unsavePost = asyncHandler(async (req, res, next) => {
     res.status(200).json({ status: 'SUCCESS', message: 'Post removed from saved posts' });
 });
 
-// 4.3 Get all saved posts for the current user
 const getMySavedPosts = asyncHandler(async (req, res) => {
+    const currentUserId = req.authenticatedUser.id;
+
     const savedPosts = await SavedPost.findAll({
-        where: { userId: req.authenticatedUser.id },
+        where: { userId: currentUserId },
         include: [{ model: Post, include: [allAuthorsInclude] }],
         order: [['createdAt', 'DESC']]
     });
-    res.status(200).json({ status: 'SUCCESS', results: savedPosts.length, data: { savedPosts } });
+
+    const posts = savedPosts.map(s => s.Post);
+    const postsWithMeta = await attachMetaToPosts(posts, currentUserId);
+
+    res.status(200).json({ status: 'SUCCESS', results: savedPosts.length, data: { savedPosts: postsWithMeta } });
 });
 
 // ── EXPORTS ───────────────────────────────────────────────────────
 module.exports = {
-    // Posts CRUD
     createPost, getAllPosts, getMyPosts, getOnePost,
     updatePost, deletePost, togglePin,
-    // Comments
     createComment, getPostComments, deleteComment,
-    // Likes
     toggleLike, getMyLikedPosts,
-    // Saved
     savePost, unsavePost, getMySavedPosts
 };

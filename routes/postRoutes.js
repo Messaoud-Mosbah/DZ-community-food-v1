@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const postService = require("../services/postService");
-const { protect } = require("../services/authService");
-const { allwodTo } = require("../services/editProfile");
+const { protect, allwodTo } = require("../services/authService");
 const upload = require("../middlewares/uploadMiddleware");
 const {
   validateCreatePost,
@@ -11,35 +10,32 @@ const {
   validateidpost,
 } = require("../utils/validators/postValidation");
 
+const auth = [protect, allwodTo("USER", "RESTAURANT", "ADMIN")];
 const uploadFields = upload.fields([{ name: "images", maxCount: 10 }, { name: "video", maxCount: 1 }]);
 
-// ── 1. ALL POSTS ──────────────────────────────────────────────────
-router.get("/",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateGetPosts, postService.getAllPosts);
-router.post("/", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), uploadFields, validateCreatePost, postService.createPost);
+// ── POSTS ─────────────────────────────────────────────────────────
+router.get("/",        ...auth, validateGetPosts, postService.getAllPosts);
+router.post("/",       ...auth, uploadFields, validateCreatePost, postService.createPost);
+router.get("/my-posts",...auth, postService.getMyPosts);
+router.get("/pin/:id", ...auth, postService.togglePin);
 
-// ── 2. MY POSTS ───────────────────────────────────────────────────
-router.get("/my-posts", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getMyPosts);
+// ── LIKES ─────────────────────────────────────────────────────────
+router.post("/:postId/toggle-like", ...auth, postService.toggleLike);
+router.get("/liked",                ...auth, postService.getMyLikedPosts);
 
-// ── 3. PIN ────────────────────────────────────────────────────────
-router.get("/pin/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.togglePin);
+// ── SAVED ─────────────────────────────────────────────────────────
+router.post("/save/:postId",   ...auth, postService.savePost);
+router.delete("/save/:postId", ...auth, postService.unsavePost);
+router.get("/saved",           ...auth, postService.getMySavedPosts);
 
-// ── 4. LIKES ──────────────────────────────────────────────────────
-router.post("/:postId/toggle-like", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.toggleLike);
-router.get("/liked",                protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getMyLikedPosts);
+// ── COMMENTS ──────────────────────────────────────────────────────
+router.get("/:postId/comments",  ...auth, postService.getPostComments);
+router.post("/:postId/comments", ...auth, postService.createComment);
+router.delete("/comments/:id",   ...auth, postService.deleteComment);
 
-// ── 5. SAVED POSTS ────────────────────────────────────────────────
-router.post("/save/:postId",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.savePost);
-router.delete("/save/:postId", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.unsavePost);
-router.get("/saved",           protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getMySavedPosts);
-
-// ── 6. COMMENTS ───────────────────────────────────────────────────
-router.get("/:postId/comments",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getPostComments);
-router.post("/:postId/comments", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.createComment);
-router.delete("/comments/:id",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.deleteComment);
-
-// ── 7. SINGLE POST (CRUD) ─────────────────────────────────────────
-router.get("/:id",    protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateidpost, postService.getOnePost);
-router.patch("/:id",  protect, allwodTo("USER", "RESTAURANT", "ADMIN"), uploadFields, validateUpdatePost, postService.updatePost);
-router.delete("/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), validateidpost, postService.deletePost);
+// ── SINGLE POST ───────────────────────────────────────────────────
+router.get("/:id",    ...auth, validateidpost, postService.getOnePost);
+router.patch("/:id",  ...auth, uploadFields, validateUpdatePost, postService.updatePost);
+router.delete("/:id", ...auth, validateidpost, postService.deletePost);
 
 module.exports = router;

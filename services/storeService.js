@@ -1,42 +1,33 @@
 const asyncHandler = require("express-async-handler");
-const { Op, Sequelize } = require("sequelize");
 const { Product, RestaurantProfile, User } = require("../models");
 const ApiError = require("../utils/apiError");
 
+const restaurantInclude = {
+    model: RestaurantProfile,
+    as: "restaurant",
+    attributes: ["id", "restaurantName", "restaurantLogoUrl"],
+    include: [{ model: User, attributes: ["userName"] }]
+};
 
-// @desc   Browse all products across all restaurants
-// @route  GET /api/store/products
-// @access USER
-exports.allProducts = asyncHandler(async (req, res, next) => {
-  const cursor = req.query.cursor ? new Date(req.query.cursor) : null;
-  const limit = req.query.limit ? parseInt(req.query.limit) : 50;
-   const products = await Product.findAll({
-    include: [
-      {
-        model: RestaurantProfile,
-        as: "restaurant",
-        attributes: ["id", "restaurantName", "restaurantLogoUrl"],
-        include: [
-          {
-            model: User,
-            attributes: ["userName"],
-          },
-        ],
-      },
-    ],
-  });
+// GET /api/store/products
+exports.allProducts = asyncHandler(async (req, res) => {
+    const limit = parseInt(req.query.limit) || 50;
+    const cursor = req.query.cursor ? new Date(req.query.cursor) : null;
 
-  const nextCursor =
-    products.length > 0 ? products[products.length - 1].createdAt : null;
+    const where = cursor ? { createdAt: { $lt: cursor } } : {};
 
-  res.status(200).json({
-    status: "SUCCESS",
-    message: "Products fetched successfully",
-    data: { products,
-         nextCursor,
-    results: products.length,
-     },
- 
-    errors: null,
-  });
+    const products = await Product.findAll({
+        where,
+        limit,
+        order: [["createdAt", "DESC"]],
+        include: [restaurantInclude]
+    });
+
+    const nextCursor = products.length ? products[products.length - 1].createdAt : null;
+
+    res.status(200).json({
+        status: "SUCCESS",
+        data: { results: products.length, nextCursor, products },
+        errors: null
+    });
 });
