@@ -684,6 +684,39 @@ const allwodTo = (...roles) =>
     next();
   });
 
+  
+//folowing system
+const toggleFollow = asyncHandler(async (req, res) => {
+  const followerId = req.authenticatedUser.id;
+  const followingId = req.params.userId;
+
+  if (followerId === followingId)
+    return res.status(400).json({ status: 'FAIL', message: 'لا تقدر تتابع نفسك' });
+
+  const existing = await Follow.findOne({ where: { followerId, followingId } });
+
+  if (existing) {
+    await existing.destroy();
+    await User.decrement('followersCount', { where: { id: followingId } });
+    await User.decrement('followingCount', { where: { id: followerId } });
+    return res.status(200).json({ 
+      status: 'SUCCESS', 
+      message: '  unfollow suc', 
+      isFollowing: false 
+    });
+  }
+
+  await Follow.create({ followerId, followingId });
+  await User.increment('followersCount', { where: { id: followingId } });
+  await User.increment('followingCount', { where: { id: followerId } });
+
+  res.status(200).json({ 
+    status: 'SUCCESS', 
+    message: 'follow succ', 
+    isFollowing: true 
+  });
+});
+
 module.exports = {
   signup,
   verifyEmail,
@@ -699,7 +732,7 @@ module.exports = {
 
   userProfile,
   restaurantProfile,
-
+toggleFollow,
   protect,
   allwodTo,
 };

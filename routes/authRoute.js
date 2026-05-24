@@ -9,6 +9,7 @@ const {
 
   signin,
   logout,
+  toggleFollow,
 
   forgetPassword,
   verifyResetToken,
@@ -44,6 +45,8 @@ router.post("/forget-password", forgetPassword);
 router.get("/verify-reset-password-token/:token", verifyResetToken);
 ////////////////////////////////////
 router.post("/reset-password", validatePassword, resetPassword);
+router.post("/follow", toggleFollow);
+
 
 router.patch(
   "/user/onboarding",

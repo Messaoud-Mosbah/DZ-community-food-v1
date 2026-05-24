@@ -1,4 +1,3 @@
-
 'use strict';
 
 /** @type {import('sequelize-cli').Migration} */
@@ -14,7 +13,7 @@ module.exports = {
       userName: {
         type: Sequelize.STRING(100),
         unique: true,
-        allowNull: true // يتناسب مع الـ Model حيث لا يوجد allowNull: false
+        allowNull: true
       },
       slug: {
         type: Sequelize.STRING,
@@ -43,7 +42,7 @@ module.exports = {
         defaultValue: "GUEST"
       },
       status: {
-        type: Sequelize.ENUM("ACTIVE", "INACTIVE", "SUSPENDED"), // تم إضافة INACTIVE لتطابق الـ Model
+        type: Sequelize.ENUM("ACTIVE", "INACTIVE", "SUSPENDED"),
         defaultValue: "ACTIVE"
       },
       isVerified: {
@@ -78,6 +77,15 @@ module.exports = {
         allowNull: true,
         defaultValue: null
       },
+      // ✅ إضافة عدادات المتابعين
+      followersCount: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0
+      },
+      followingCount: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
@@ -91,6 +99,5 @@ module.exports = {
 
   down: async (queryInterface, Sequelize) => {
     await queryInterface.dropTable('users');
-    // ملاحظة: عند استخدام ENUM في PostgreSQL، قد تحتاج لحذف أنواع الـ ENUM يدوياً إذا واجهت مشاكل في الـ rollback
   }
 };

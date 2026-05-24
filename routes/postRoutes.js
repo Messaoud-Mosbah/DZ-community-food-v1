@@ -26,7 +26,6 @@ router.get("/pin/:id", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postSer
 // ── 4. LIKES ──────────────────────────────────────────────────────
 router.post("/:postId/toggle-like", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.toggleLike);
 router.get("/liked",                protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.getMyLikedPosts);
-router.get("/:postId/check-like",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.checkIfLiked);
 
 // ── 5. SAVED POSTS ────────────────────────────────────────────────
 router.post("/save/:postId",   protect, allwodTo("USER", "RESTAURANT", "ADMIN"), postService.savePost);

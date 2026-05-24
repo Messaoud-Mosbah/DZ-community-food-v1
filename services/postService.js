@@ -61,11 +61,11 @@ const createPost = asyncHandler(async (req, res) => {
 
     res.status(201).json({ status: 'SUCCESS', data: { post: fullPost } });
 });
-
-// 1.2 Get all posts with cursor-based pagination ordered by pin then date
+//1-2 get All posts
 const getAllPosts = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const cursor = req.query.cursor;
+    const currentUserId = req.authenticatedUser?.id;
 
     let whereClause = {};
     if (cursor) {
@@ -87,15 +87,30 @@ const getAllPosts = asyncHandler(async (req, res) => {
         include: [{ model: PostMedia, as: "media" }, allAuthorsInclude],
     });
 
+    const postsWithLikes = await Promise.all(
+        posts.map(async (post) => {
+            let isLiked = false;
+            if (currentUserId) {
+                const like = await LikePosts.findOne({
+                    where: { userId: currentUserId, postId: post.id }
+                });
+                isLiked = !!like;
+            }
+            return { ...post.toJSON(), isLiked };
+        })
+    );
+
     let nextCursor = null;
     if (posts.length > 0) {
         const lastItem = posts[posts.length - 1];
         nextCursor = `${lastItem.isPinned}_${lastItem.createdAt.toISOString()}`;
     }
 
-    res.status(200).json({ status: "SUCCESS", data: { results: posts.length, nextCursor, posts } });
+    res.status(200).json({ 
+        status: "SUCCESS", 
+        data: { results: posts.length, nextCursor, posts: postsWithLikes } 
+    });
 });
-
 // 1.3 Get current user posts with cursor-based pagination
 const getMyPosts = asyncHandler(async (req, res) => {
     const { id, role } = req.authenticatedUser;
@@ -272,15 +287,9 @@ const toggleLike = asyncHandler(async (req, res, next) => {
     }
 });
 
-// 3.2 Check if current user liked a specific post
-const checkIfLiked = asyncHandler(async (req, res) => {
-    const like = await LikePosts.findOne({
-        where: { userId: req.authenticatedUser.id, postId: req.params.postId }
-    });
-    res.status(200).json({ status: 'SUCCESS', data: { isLiked: !!like } });
-});
 
-// 3.3 Get all posts liked by the current user
+
+// 3.2 Get all posts liked by the current user
 const getMyLikedPosts = asyncHandler(async (req, res) => {
     const likedPosts = await LikePosts.findAll({
         where: { userId: req.authenticatedUser.id },
@@ -337,7 +346,7 @@ module.exports = {
     // Comments
     createComment, getPostComments, deleteComment,
     // Likes
-    toggleLike, checkIfLiked, getMyLikedPosts,
+    toggleLike, getMyLikedPosts,
     // Saved
     savePost, unsavePost, getMySavedPosts
 };
