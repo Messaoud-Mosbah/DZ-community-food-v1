@@ -32,14 +32,19 @@ const allAuthorsInclude = {
     ]
 };
 
-// ✅ Helper يضيف isLiked و isFollowing لكل question
+// ✅ Helper يضيف isLiked و isFollowing و isSavedForLater لكل question
 const attachMetaToQuestions = async (questions, currentUserId) => {
-    if (!currentUserId) return questions.map(q => ({ ...q.toJSON(), isLiked: false, isFollowing: false }));
+    if (!currentUserId) return questions.map(q => ({ 
+        ...q.toJSON(), 
+        isLiked: false, 
+        isFollowing: false,
+        isSavedForLater: false  // 👈 إضافة
+    }));
 
     const questionIds = questions.map(q => q.id);
     const authorIds = questions.map(q => q.userId);
 
-    const [likedQuestions, followedUsers] = await Promise.all([
+    const [likedQuestions, followedUsers, savedQuestions] = await Promise.all([  // 👈 إضافة savedQuestions
         LikeQuestion.findAll({
             where: { userId: currentUserId, questionId: questionIds },
             attributes: ['questionId']
@@ -47,16 +52,22 @@ const attachMetaToQuestions = async (questions, currentUserId) => {
         Follow.findAll({
             where: { followerId: currentUserId, followingId: authorIds },
             attributes: ['followingId']
+        }),
+        SavedQuestion.findAll({  // 👈 إضافة
+            where: { userId: currentUserId, questionId: questionIds },
+            attributes: ['questionId']
         })
     ]);
 
     const likedSet = new Set(likedQuestions.map(l => l.questionId));
     const followedSet = new Set(followedUsers.map(f => f.followingId));
+    const savedSet = new Set(savedQuestions.map(s => s.questionId));  // 👈 إضافة
 
     return questions.map(q => ({
         ...q.toJSON(),
         isLiked: likedSet.has(q.id),
-        isFollowing: followedSet.has(q.userId)
+        isFollowing: followedSet.has(q.userId),
+        isSavedForLater: savedSet.has(q.id)  // 👈 إضافة
     }));
 };
 
@@ -188,12 +199,19 @@ const getQuestionComments = asyncHandler(async (req, res) => {
     const comments = await CommentQuestion.findAll({
         where: { questionId: req.params.questionId },
         order: [['createdAt', 'DESC']],
-        include: [getAuthorInclude('USER')]
+        include: [{
+            model: User,
+            as: "user",  // 👈 إضافة
+            attributes: ['id', 'userName', 'role'],
+            include: [
+                { model: UserProfile, required: false, attributes: ['fullName', 'profilePicture'] },
+                { model: RestaurantProfile, required: false, attributes: ['restaurantName', 'restaurantLogoUrl', 'city'] }
+            ]
+        }]
     });
 
     res.status(200).json({ status: 'SUCCESS', data: { results: comments.length, comments } });
 });
-
 const deleteQuestionComment = asyncHandler(async (req, res, next) => {
     const comment = await CommentQuestion.findByPk(req.params.id);
     if (!comment) return next(new ApiError('Comment not found', 404));
@@ -209,20 +227,7 @@ const deleteQuestionComment = asyncHandler(async (req, res, next) => {
     res.status(200).json({ status: 'SUCCESS', message: 'Comment deleted' });
 });
 
-const getMyQuestionComments = asyncHandler(async (req, res) => {
-    const { id, role } = req.authenticatedUser;
 
-    const comments = await CommentQuestion.findAll({
-        where: { userId: id },
-        order: [['createdAt', 'DESC']],
-        include: [
-            getAuthorInclude(role),
-            { model: Question, attributes: ['id', 'title', 'content'] }
-        ]
-    });
-
-    res.status(200).json({ status: 'SUCCESS', data: { results: comments.length, comments } });
-});
 
 // ── 3. LIKES SECTION ──────────────────────────────────────────────
 
@@ -290,7 +295,7 @@ const getMySavedQuestions = asyncHandler(async (req, res) => {
 module.exports = {
     createQuestion, getAllQuestions, getMyQuestions, getOneQuestion,
     updateQuestion, deleteQuestion, togglePin,
-    createQuestionComment, getQuestionComments, deleteQuestionComment, getMyQuestionComments,
+    createQuestionComment, getQuestionComments, deleteQuestionComment, 
     toggleQuestionLike,
     saveQuestion, unsaveQuestion, getMySavedQuestions
 };
