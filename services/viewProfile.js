@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../utils/apiError");
-const { User, UserProfile, RestaurantProfile, Post } = require("../models");
+const { User, UserProfile, RestaurantProfile, Post,SavedPost,PostMedia } = require("../models");
 
 const userAttributes = [
     'id', 'userName', 'email', 'role', 'status',
@@ -12,8 +12,16 @@ const userAttributes = [
 // GET own profile
 exports.getOwnProfile = asyncHandler(async (req, res, next) => {
     const user = await User.findByPk(req.authenticatedUser.id, {
-        attributes: userAttributes,
-        include: [UserProfile, RestaurantProfile, Post]
+       attributes: userAttributes,
+        include: [
+            UserProfile, 
+            RestaurantProfile, 
+            SavedPost,
+            {
+                model: Post,
+               include: "media"
+            }
+        ]
     });
 
     if (!user) return next(new ApiError("User not found", 404));
@@ -24,7 +32,7 @@ exports.getOwnProfile = asyncHandler(async (req, res, next) => {
 
 // GET other user's profile
 exports.getUserProfileById = asyncHandler(async (req, res, next) => {
-    const routeType = req.profileType;
+    const routeType = req.body.profileType;
 
     const user = await User.findByPk(req.params.id, {
         attributes: ["id", "userName", "slug", "role", "followersCount", "followingCount", "createdAt"],
@@ -33,11 +41,17 @@ exports.getUserProfileById = asyncHandler(async (req, res, next) => {
                 model: routeType === "RESTAURANT" ? RestaurantProfile : UserProfile,
                 attributes: { exclude: ["userId", "id", "createdAt", "updatedAt"] }
             },
-            Post
+              {
+                model: Post,
+                include: "media"
+            },SavedPost
         ]
     });
 
     if (!user) return next(new ApiError("User not found", 404));
+    console.log(routeType
+
+    )
     if (user.role !== routeType) return next(new ApiError("Profile not found", 404));
 
     const profile = user.toJSON();

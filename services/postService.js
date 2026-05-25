@@ -311,7 +311,8 @@ const getPostComments = asyncHandler(async (req, res) => {
     include: [
       {
         model: User,
-        as: "user",
+                as: "user",
+
         include: [
           { model: UserProfile, required: false },
           { model: RestaurantProfile, required: false },
