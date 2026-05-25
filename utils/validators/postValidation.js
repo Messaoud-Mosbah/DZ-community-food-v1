@@ -13,7 +13,7 @@ const validateCreatePost = asyncHandler(async (req, res, next) => {
 
   const schema = Joi.object({
     title: Joi.string().max(255).required(),
-    description: Joi.string().max(255).required(),
+    description: Joi.string().required(),
     contentType: Joi.string().valid('RECIPE', 'DISH').optional(),
     mediaType: Joi.string().valid('IMAGE', 'VIDEO', 'NONE'),
     keptMediaIds: Joi.any().optional() // ✅ زيد هذا
