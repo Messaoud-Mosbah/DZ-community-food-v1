@@ -16,11 +16,7 @@ exports.getOwnProfile = asyncHandler(async (req, res, next) => {
         include: [
             UserProfile, 
             RestaurantProfile, 
-            SavedPost,
-            {
-                model: Post,
-               include: "media"
-            }
+           
         ]
     });
 
@@ -41,10 +37,7 @@ exports.getUserProfileById = asyncHandler(async (req, res, next) => {
                 model: routeType === "RESTAURANT" ? RestaurantProfile : UserProfile,
                 attributes: { exclude: ["userId", "id", "createdAt", "updatedAt"] }
             },
-              {
-                model: Post,
-                include: "media"
-            },SavedPost
+             
         ]
     });
 
