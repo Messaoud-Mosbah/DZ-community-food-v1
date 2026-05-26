@@ -24,8 +24,7 @@ router.post("/:postId/toggle-like", ...auth, postService.toggleLike);
 router.get("/liked",                ...auth, postService.getMyLikedPosts);
 
 // ── SAVED ─────────────────────────────────────────────────────────
-router.post("/save/:postId",   ...auth, postService.savePost);
-router.delete("/save/:postId", ...auth, postService.unsavePost);
+router.post("/toggleSavePost/:postId",   ...auth, postService.toggleSavePost);
 router.get("/saved",           ...auth, postService.getMySavedPosts);
 
 // ── COMMENTS ──────────────────────────────────────────────────────
