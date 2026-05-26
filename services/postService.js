@@ -29,30 +29,29 @@ const attachMetaToPosts = async (posts, currentUserId) => {
     return posts.map((p) => ({
       ...p.toJSON(),
       isLiked: false,
-      isFollowing: false,
+      isSaved: false,
     }));
 
   const postIds = posts.map((p) => p.id);
-  const authorIds = posts.map((p) => p.userId);
 
-  const [likedPosts, followedUsers] = await Promise.all([
+  const [likedPosts, savedPosts] = await Promise.all([
     LikePosts.findAll({
       where: { userId: currentUserId, postId: postIds },
       attributes: ["postId"],
     }),
-    // Follow.findAll({
-    //   where: { followerId: currentUserId, followingId: authorIds },
-    //   attributes: ["followingId"],
-    // }),
+    SavedPost.findAll({
+      where: { userId: currentUserId, postId: postIds },
+      attributes: ["postId"],
+    }),
   ]);
 
   const likedSet = new Set(likedPosts.map((l) => l.postId));
-  //   const followedSet = new Set(followedUsers.map((f) => f.followingId));
+  const savedSet = new Set(savedPosts.map((s) => s.postId));
 
   return posts.map((p) => ({
     ...p.toJSON(),
     isLiked: likedSet.has(p.id),
-    // isFollowing: followedSet.has(p.userId),
+    isSaved: savedSet.has(p.id),
   }));
 };
 
@@ -308,6 +307,7 @@ const createComment = asyncHandler(async (req, res, next) => {
     .status(201)
     .json({ status: "SUCCESS", message: "Comment added", data: { comment } });
 });
+
 const getPostComments = asyncHandler(async (req, res) => {
   const comments = await CommentPosts.findAll({
     where: { postId: req.params.postId },
@@ -316,7 +316,6 @@ const getPostComments = asyncHandler(async (req, res) => {
       {
         model: User,
         as: "user",
-
         include: [
           { model: UserProfile, required: false },
           { model: RestaurantProfile, required: false },
@@ -329,6 +328,7 @@ const getPostComments = asyncHandler(async (req, res) => {
     .status(200)
     .json({ status: "SUCCESS", data: { results: comments.length, comments } });
 });
+
 const deleteComment = asyncHandler(async (req, res, next) => {
   const comment = await CommentPosts.findByPk(req.params.id);
   if (!comment) return next(new ApiError("Comment not found", 404));
@@ -381,20 +381,16 @@ const getMyLikedPosts = asyncHandler(async (req, res) => {
 
   const likedPosts = await LikePosts.findAll({
     where: { userId: currentUserId },
-include: [
-  { 
-    model: Post, 
-  include: [
-    {
-      model: Post,
-      include: [
-        { model: PostMedia, as: "media" },
-        getAuthorInclude()
-      ]
-    }
-  ], 
-  }
-]   , order: [["createdAt", "DESC"]],
+    include: [
+      {
+        model: Post,
+        include: [
+          { model: PostMedia, as: "media" },
+          getAuthorInclude(),
+        ],
+      },
+    ],
+    order: [["createdAt", "DESC"]],
   });
 
   const posts = likedPosts.map((l) => l.Post);
@@ -432,15 +428,15 @@ const getMySavedPosts = asyncHandler(async (req, res) => {
 
   const savedPosts = await SavedPost.findAll({
     where: { userId: currentUserId },
-include: [
-    {
-      model: Post,
-      include: [
-        { model: PostMedia, as: "media" },
-        getAuthorInclude()
-      ]
-    }
-  ],
+    include: [
+      {
+        model: Post,
+        include: [
+          { model: PostMedia, as: "media" },
+          getAuthorInclude(),
+        ],
+      },
+    ],
   });
 
   const posts = savedPosts.map((s) => s.Post);
@@ -467,6 +463,6 @@ module.exports = {
   deleteComment,
   toggleLike,
   getMyLikedPosts,
- toggleSavePost,
+  toggleSavePost,
   getMySavedPosts,
 };
