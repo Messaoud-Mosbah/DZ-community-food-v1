@@ -8,7 +8,8 @@ const auth = [protect, allwodTo("USER", "RESTAURANT", "ADMIN")];
 router.get("/",            ...auth, q.getAllQuestions);
 router.post("/",           ...auth, q.createQuestion);
 
-router.get("/my",          ...auth, q.getMyQuestions);    
+router.get("/my",          ...auth, q.getMyQuestions); 
+router.get("/my/answered", ...auth, q.getMyAnsweredQuestions);   
 router.get("/saved",       ...auth, q.getMySavedQuestions); 
 
 router.post("/save/:questionId",   ...auth, q.saveQuestion);
@@ -20,9 +21,11 @@ router.get("/:questionId/comments",   ...auth, q.getQuestionComments);
 router.post("/:questionId/comments",  ...auth, q.createQuestionComment);
 router.delete("/comments/:id",        ...auth, q.deleteQuestionComment);
 
-router.get("/pin/:id",     ...auth, q.togglePin); 
+router.patch("/pin/:id",     ...auth, q.togglePin); 
 router.get("/:id",         ...auth, q.getOneQuestion); 
 router.patch("/:id",       ...auth, q.updateQuestion);
 router.delete("/:id",      ...auth, q.deleteQuestion);
+router.patch("/:id/solve", ...auth, q.markAsSolved);
+router.patch("/:id/close", ...auth, q.closeQuestion);
 
 module.exports = router;

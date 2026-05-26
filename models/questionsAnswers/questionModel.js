@@ -34,6 +34,14 @@ const Question = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    isSolved: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false,
+},
+isClosed: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false,
+},
     isPinned: { // أضفته بناءً على استخدامك له في الـ Controller
       type: DataTypes.BOOLEAN,
       defaultValue: false,

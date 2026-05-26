@@ -212,6 +212,7 @@ const getQuestionComments = asyncHandler(async (req, res) => {
 
     res.status(200).json({ status: 'SUCCESS', data: { results: comments.length, comments } });
 });
+
 const deleteQuestionComment = asyncHandler(async (req, res, next) => {
     const comment = await CommentQuestion.findByPk(req.params.id);
     if (!comment) return next(new ApiError('Comment not found', 404));
@@ -290,12 +291,60 @@ const getMySavedQuestions = asyncHandler(async (req, res) => {
 
     res.status(200).json({ status: 'SUCCESS', results: savedQuestions.length, data: { savedQuestions: questionsWithMeta } });
 });
+///////
+const markAsSolved = asyncHandler(async (req, res, next) => {
+    const question = await Question.findOne({
+        where: { id: req.params.id, userId: req.authenticatedUser.id }
+    });
+    if (!question) return next(new ApiError('Question not found or not yours', 404));
 
+    question.isSolved = !question.isSolved;
+    await question.save();
+
+    res.status(200).json({ status: 'SUCCESS', message: question.isSolved ? 'Marked as solved' : 'Unmarked', data: { question } });
+});
+///////
+const closeQuestion = asyncHandler(async (req, res, next) => {
+    const question = await Question.findOne({
+        where: { id: req.params.id, userId: req.authenticatedUser.id }
+    });
+    if (!question) return next(new ApiError('Question not found or not yours', 404));
+
+    question.isClosed = !question.isClosed;
+    await question.save();
+
+    res.status(200).json({ status: 'SUCCESS', message: question.isClosed ? 'Question closed' : 'Question reopened', data: { question } });
+});
+const getMyAnsweredQuestions = asyncHandler(async (req, res) => {
+    const currentUserId = req.authenticatedUser.id;
+
+    const myComments = await CommentQuestion.findAll({
+        where: { userId: currentUserId },
+        attributes: ['questionId'],
+        group: ['questionId']
+    });
+
+    const questionIds = myComments.map(c => c.questionId);
+
+    if (questionIds.length === 0) {
+        return res.status(200).json({ status: 'SUCCESS', data: { questions: [] } });
+    }
+
+    const questions = await Question.findAll({
+        where: { id: questionIds },
+        order: [['createdAt', 'DESC']],
+        include: [allAuthorsInclude]
+    });
+
+    const questionsWithMeta = await attachMetaToQuestions(questions, currentUserId);
+
+    res.status(200).json({ status: 'SUCCESS',results: questionsWithMeta.length, data: { questions: questionsWithMeta } });
+});
 // ── EXPORTS ───────────────────────────────────────────────────────
 module.exports = {
     createQuestion, getAllQuestions, getMyQuestions, getOneQuestion,
     updateQuestion, deleteQuestion, togglePin,
     createQuestionComment, getQuestionComments, deleteQuestionComment, 
-    toggleQuestionLike,
+    toggleQuestionLike,closeQuestion,markAsSolved,getMyAnsweredQuestions,
     saveQuestion, unsaveQuestion, getMySavedQuestions
 };

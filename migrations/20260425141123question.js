@@ -17,7 +17,6 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: false,
       },
-      // إضافة حقل التثبيت
       isPinned: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
@@ -37,7 +36,7 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'users', 
+          model: 'users',
           key: 'id',
         },
         onUpdate: 'CASCADE',
@@ -54,7 +53,7 @@ module.exports = {
     });
 
     await queryInterface.addIndex('questions', ['userId']);
-    await queryInterface.addIndex('questions', ['isPinned']); // اختياري: لتحسين سرعة جلب الأسئلة المثبتة
+    await queryInterface.addIndex('questions', ['isPinned']);
   },
 
   down: async (queryInterface, Sequelize) => {

@@ -1,30 +1,5 @@
+const upload = require("../middlewares/uploadMiddleware"); 
 const asyncHandler = require("express-async-handler");
-const bcrypt = require("bcryptjs");
-const ApiError = require("../utils/apiError");
-const { User, UserProfile, RestaurantProfile } = require("../models");
-const { GENERATE_TOKEN } = require("../utils/createToken");
-
-const userAttributes = [
-    "id", "userName", "email", "role", "status",
-    "isVerified", "isLoggedOut", "isOnboardingCompleted",
-    "pendingEmail", "slug", "followersCount", "followingCount",
-    "createdAt", "updatedAt"
-];
-
-const updateFields = (target, source, fields) => {
-    fields.forEach(field => { if (source[field] !== undefined) target[field] = source[field]; });
-};
-
-// ── Permissions ───────────────────────────────────────────────────
-
-exports.allwodTo = (...roles) =>
-    asyncHandler(async (req, res, next) => {
-        if (!req.authenticatedUser) return next(new ApiError("You are not logged in", 401));
-        if (!roles.includes(req.authenticatedUser.role)) return next(new ApiError("You are not allowed to access this route", 403));
-        next();
-    });
-
-// ── Edit User Profile ─────────────────────────────────────────────
 
 exports.editUserProfile = asyncHandler(async (req, res, next) => {
     const userId = req.authenticatedUser.id;
@@ -34,8 +9,15 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
     let profile = await UserProfile.findOne({ where: { userId } });
     if (!profile) profile = await UserProfile.create({ userId });
 
-    const { userBasicInformation, userUsagePreferences } = req.body.profile || {};
-    if (userBasicInformation) updateFields(profile, userBasicInformation, ["fullName", "city", "phoneNumber", "bio", "profilePicture"]);
+    const profile_data = req.body.profile ? JSON.parse(req.body.profile) : {}; // 👈
+    const { userBasicInformation, userUsagePreferences } = profile_data;
+
+    // 👈 الصورة من الملف المرفوع
+    if (req.files?.image?.[0]) {
+        profile.profilePicture = `/uploads/images/${req.files.image[0].filename}`;
+    }
+
+    if (userBasicInformation) updateFields(profile, userBasicInformation, ["fullName", "city", "phoneNumber", "bio"]);
     if (userUsagePreferences) updateFields(profile, userUsagePreferences, ["usageGoal", "kitchenCategory"]);
 
     await profile.save();
@@ -43,8 +25,6 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
     const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
     res.status(200).json({ status: "SUCCESS", message: "User profile updated successfully", data: { user: newUser }, errors: null });
 });
-
-// ── Edit Restaurant Profile ───────────────────────────────────────
 
 exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     const userId = req.authenticatedUser.id;
@@ -61,9 +41,15 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
         });
     }
 
-    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails, restaurantServices } = req.body.profile || {};
+    const profile_data = req.body.profile ? JSON.parse(req.body.profile) : {}; // 👈
+    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails, restaurantServices } = profile_data;
 
-    if (restaurantBasicInformation) updateFields(profile, restaurantBasicInformation, ["restaurantName", "businessEmail", "phoneNumber", "restaurantLogoUrl", "bio"]);
+    // 👈 الصورة من الملف المرفوع
+    if (req.files?.image?.[0]) {
+        profile.restaurantLogoUrl = `/uploads/images/${req.files.image[0].filename}`;
+    }
+
+    if (restaurantBasicInformation) updateFields(profile, restaurantBasicInformation, ["restaurantName", "businessEmail", "phoneNumber", "bio"]);
     if (restaurantLocationAndContact) updateFields(profile, restaurantLocationAndContact, ["city", "street", "postalCode", "googleMapsLink"]);
     if (restaurantDetails) {
         if (restaurantDetails.kitchenCategory !== undefined) profile.kitchenCategory = restaurantDetails.kitchenCategory;
@@ -76,9 +62,6 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
     res.status(200).json({ status: "SUCCESS", message: "Restaurant profile updated successfully", data: { user: newUser }, errors: null });
 });
-
-// ── Edit Account ──────────────────────────────────────────────────
-
 exports.editAccount = asyncHandler(async (req, res, next) => {
     const { userName, currentPassword, newPassword, newPasswordConfirm, email } = req.body;
 
