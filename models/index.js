@@ -88,7 +88,9 @@ OrderItem.belongsTo(Order, { foreignKey: "orderId" });
 
 Product.hasMany(OrderItem, { foreignKey: "productId", onDelete: "SET NULL" });
 OrderItem.belongsTo(Product, { foreignKey: "productId", as: "product" });
-
+User.hasMany(CommentPosts, { foreignKey: "userId", onDelete: "CASCADE" });
+CommentPosts.belongsTo(User, { foreignKey: "userId" });User.hasMany(CommentPosts, { foreignKey: "userId", onDelete: "CASCADE" });
+CommentPosts.belongsTo(User, { foreignKey: "userId" });
 // ── 4. تصدير جميع الموديلات بما فيها الجديدة
 module.exports = {
   sequelize,

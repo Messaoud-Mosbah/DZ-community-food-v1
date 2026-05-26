@@ -40,19 +40,19 @@ const attachMetaToPosts = async (posts, currentUserId) => {
       where: { userId: currentUserId, postId: postIds },
       attributes: ["postId"],
     }),
-    Follow.findAll({
-      where: { followerId: currentUserId, followingId: authorIds },
-      attributes: ["followingId"],
-    }),
+    // Follow.findAll({
+    //   where: { followerId: currentUserId, followingId: authorIds },
+    //   attributes: ["followingId"],
+    // }),
   ]);
 
   const likedSet = new Set(likedPosts.map((l) => l.postId));
-  const followedSet = new Set(followedUsers.map((f) => f.followingId));
+  // const followedSet = new Set(followedUsers.map((f) => f.followingId));
 
   return posts.map((p) => ({
     ...p.toJSON(),
     isLiked: likedSet.has(p.id),
-    isFollowing: followedSet.has(p.userId),
+    // isFollowing: followedSet.has(p.userId),
   }));
 };
 
@@ -304,15 +304,24 @@ const createComment = asyncHandler(async (req, res, next) => {
 
   res.status(201).json({ status: "SUCCESS", message: "Comment added", data: { comment } });
 });
-
 const getPostComments = asyncHandler(async (req, res) => {
   const comments = await CommentPosts.findAll({
     where: { postId: req.params.postId },
     order: [["createdAt", "DESC"]],
-    include: [getAuthorInclude()],
+    include: [
+      {
+        model: User,
+        include: [
+          { model: UserProfile, required: false },
+          { model: RestaurantProfile, required: false },
+        ],
+      },
+    ],
   });
 
-  res.status(200).json({ status: "SUCCESS", data: { results: comments.length, comments } });
+  res
+    .status(200)
+    .json({ status: "SUCCESS", data: { results: comments.length, comments } });
 });
 
 const deleteComment = asyncHandler(async (req, res, next) => {
