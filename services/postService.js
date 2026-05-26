@@ -47,11 +47,7 @@ const attachMetaToPosts = async (posts, currentUserId) => {
   ]);
 
   const likedSet = new Set(likedPosts.map((l) => l.postId));
-<<<<<<< HEAD
-  // const followedSet = new Set(followedUsers.map((f) => f.followingId));
-=======
-//   const followedSet = new Set(followedUsers.map((f) => f.followingId));
->>>>>>> 747565796fb5714dff2d75cf3782198dc730e244
+  //   const followedSet = new Set(followedUsers.map((f) => f.followingId));
 
   return posts.map((p) => ({
     ...p.toJSON(),
@@ -204,7 +200,7 @@ const updatePost = asyncHandler(async (req, res, next) => {
         description: description ?? post.description,
         contentType: contentType ?? post.contentType,
       },
-      { transaction }
+      { transaction },
     );
 
     const keptIds = keptMediaIds ? JSON.parse(keptMediaIds) : [];
@@ -270,7 +266,9 @@ const deletePost = asyncHandler(async (req, res, next) => {
   if (post.userId !== authId) return next(new ApiError("Not authorized", 403));
 
   await post.destroy();
-  res.status(200).json({ status: "SUCCESS", message: "Post deleted successfully" });
+  res
+    .status(200)
+    .json({ status: "SUCCESS", message: "Post deleted successfully" });
 });
 
 const togglePin = asyncHandler(async (req, res, next) => {
@@ -306,7 +304,9 @@ const createComment = asyncHandler(async (req, res, next) => {
     userId: req.authenticatedUser.id,
   });
 
-  res.status(201).json({ status: "SUCCESS", message: "Comment added", data: { comment } });
+  res
+    .status(201)
+    .json({ status: "SUCCESS", message: "Comment added", data: { comment } });
 });
 const getPostComments = asyncHandler(async (req, res) => {
   const comments = await CommentPosts.findAll({
@@ -315,7 +315,7 @@ const getPostComments = asyncHandler(async (req, res) => {
     include: [
       {
         model: User,
-                as: "user",
+        as: "user",
 
         include: [
           { model: UserProfile, required: false },
@@ -357,10 +357,22 @@ const toggleLike = asyncHandler(async (req, res, next) => {
 
   if (existingLike) {
     await existingLike.destroy();
-    res.status(200).json({ status: "SUCCESS", message: "Like removed", data: { isLiked: false } });
+    res
+      .status(200)
+      .json({
+        status: "SUCCESS",
+        message: "Like removed",
+        data: { isLiked: false },
+      });
   } else {
     await LikePosts.create({ userId, postId });
-    res.status(201).json({ status: "SUCCESS", message: "Post liked", data: { isLiked: true } });
+    res
+      .status(201)
+      .json({
+        status: "SUCCESS",
+        message: "Post liked",
+        data: { isLiked: true },
+      });
   }
 });
 
@@ -369,7 +381,12 @@ const getMyLikedPosts = asyncHandler(async (req, res) => {
 
   const likedPosts = await LikePosts.findAll({
     where: { userId: currentUserId },
-    include: [{ model: Post, include: [getAuthorInclude()] }],
+    include: [
+      {
+        model: Post,
+        include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
+      },
+    ],
     order: [["createdAt", "DESC"]],
   });
 
@@ -379,7 +396,7 @@ const getMyLikedPosts = asyncHandler(async (req, res) => {
   res.status(200).json({
     status: "SUCCESS",
     results: likedPosts.length,
-    data: { likedPosts: postsWithMeta },
+    data: { posts: postsWithMeta },
   });
 });
 
@@ -396,7 +413,9 @@ const savePost = asyncHandler(async (req, res, next) => {
   if (alreadySaved) return next(new ApiError("Post already saved", 400));
 
   await SavedPost.create({ userId, postId });
-  res.status(201).json({ status: "SUCCESS", message: "Post saved to saved posts" });
+  res
+    .status(201)
+    .json({ status: "SUCCESS", message: "Post saved to saved posts" });
 });
 
 const unsavePost = asyncHandler(async (req, res, next) => {
@@ -404,10 +423,13 @@ const unsavePost = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
 
   const savedItem = await SavedPost.findOne({ where: { userId, postId } });
-  if (!savedItem) return next(new ApiError("Post not found in saved list", 404));
+  if (!savedItem)
+    return next(new ApiError("Post not found in saved list", 404));
 
   await savedItem.destroy();
-  res.status(200).json({ status: "SUCCESS", message: "Post removed from saved posts" });
+  res
+    .status(200)
+    .json({ status: "SUCCESS", message: "Post removed from saved posts" });
 });
 
 const getMySavedPosts = asyncHandler(async (req, res) => {
@@ -415,7 +437,12 @@ const getMySavedPosts = asyncHandler(async (req, res) => {
 
   const savedPosts = await SavedPost.findAll({
     where: { userId: currentUserId },
-    include: [{ model: Post, include: [getAuthorInclude()] }],
+    include: [
+      {
+        model: Post,
+        include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
+      },
+    ],
     order: [["createdAt", "DESC"]],
   });
 
