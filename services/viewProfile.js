@@ -28,27 +28,24 @@ exports.getOwnProfile = asyncHandler(async (req, res, next) => {
 
 // GET other user's profile
 exports.getUserProfileById = asyncHandler(async (req, res, next) => {
-    const routeType = req.body.profileType;
+  const user = await User.findByPk(req.params.id, {
+    include: [
+      { model: UserProfile, required: false, },
+      { model: RestaurantProfile, required: false,  },
+    ],
+  });
 
-    const user = await User.findByPk(req.params.id, {
-        attributes: ["id", "userName", "slug", "role", "followersCount", "followingCount", "createdAt"],
-        include: [
-            {
-                model: routeType === "RESTAURANT" ? RestaurantProfile : UserProfile,
-                attributes: { exclude: ["userId", "id", "createdAt", "updatedAt"] }
-            },
-             
-        ]
-    });
+  if (!user) return next(new ApiError("User not found", 404));
 
-    if (!user) return next(new ApiError("User not found", 404));
-    console.log(routeType
+  const profile = user.toJSON();
 
-    )
-    if (user.role !== routeType) return next(new ApiError("Profile not found", 404));
+  if (user.role === "RESTAURANT") {
+    delete profile.UserProfile;
+  } else {
+    delete profile.RestaurantProfile;
+  }
 
-    const profile = user.toJSON();
-    delete profile.role;
+  delete profile.role;
 
-    res.status(200).json({ status: "SUCCESS", data: { user: profile }, errors: null });
+  res.status(200).json({ status: "SUCCESS", data: { user: profile }, errors: null });
 });
