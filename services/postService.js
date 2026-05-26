@@ -431,7 +431,7 @@ include: [
   res.status(200).json({
     status: "SUCCESS",
     results: savedPosts.length,
-    data: { savedPosts: postsWithMeta },
+    data: { posts: postsWithMeta },
   });
 });
 
