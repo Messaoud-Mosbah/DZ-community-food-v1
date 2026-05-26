@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const {sequelize} = require('../../config/database'); // أضف ../ إضافية للرجوع مستويينconst Question = require("./questionModel");
+const {sequelize} = require('../config/database'); // أضف ../ إضافية للرجوع مستويينconst Question = require("./questionModel");
 
 const savedPost = sequelize.define("savedPost", {
   id: { 

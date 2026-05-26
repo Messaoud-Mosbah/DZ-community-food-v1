@@ -47,7 +47,11 @@ const attachMetaToPosts = async (posts, currentUserId) => {
   ]);
 
   const likedSet = new Set(likedPosts.map((l) => l.postId));
+<<<<<<< HEAD
   // const followedSet = new Set(followedUsers.map((f) => f.followingId));
+=======
+//   const followedSet = new Set(followedUsers.map((f) => f.followingId));
+>>>>>>> 747565796fb5714dff2d75cf3782198dc730e244
 
   return posts.map((p) => ({
     ...p.toJSON(),
@@ -311,6 +315,8 @@ const getPostComments = asyncHandler(async (req, res) => {
     include: [
       {
         model: User,
+                as: "user",
+
         include: [
           { model: UserProfile, required: false },
           { model: RestaurantProfile, required: false },
@@ -323,7 +329,6 @@ const getPostComments = asyncHandler(async (req, res) => {
     .status(200)
     .json({ status: "SUCCESS", data: { results: comments.length, comments } });
 });
-
 const deleteComment = asyncHandler(async (req, res, next) => {
   const comment = await CommentPosts.findByPk(req.params.id);
   if (!comment) return next(new ApiError("Comment not found", 404));

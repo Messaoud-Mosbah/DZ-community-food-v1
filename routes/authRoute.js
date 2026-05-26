@@ -11,7 +11,7 @@ const {
     signupValidator, loginValidator,
     validatePassword, userProfileValidator, restaurantProfileValidator,
 } = require("../utils/validators/authValidators");
-
+const upload = require("../middlewares/uploadMiddleware"); 
 // ── AUTH ──────────────────────────────────────────────────────────
 router.post("/sign-up",                  signupValidator,  signup);
 router.get("/verify-email-token/:token", verifyEmail);
@@ -25,8 +25,8 @@ router.get("/verify-reset-password-token/:token",  verifyResetToken);
 router.post("/reset-password",                     validatePassword, resetPassword);
 
 // ── ONBOARDING ────────────────────────────────────────────────────
-router.patch("/user/onboarding",       protect, userProfileValidator,       userProfile);
-router.patch("/restaurant/onboarding", protect, restaurantProfileValidator, restaurantProfile);
+router.patch("/onboarding/user", protect,allwodTo("USER"), upload.fields([{ name: "image", maxCount: 1 }]), userProfile);
+router.patch("/onboarding/restaurant", protect,allwodTo("RESTAURANT"), upload.fields([{ name: "image", maxCount: 1 }]), restaurantProfile);
 
 // ── FOLLOW ────────────────────────────────────────────────────────
 router.post("/:userId/follow", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), toggleFollow);

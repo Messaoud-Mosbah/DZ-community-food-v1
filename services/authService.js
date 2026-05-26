@@ -262,7 +262,14 @@ const userProfile = asyncHandler(async (req, res, next) => {
   userRecord.isOnboardingCompleted = true;
   userRecord.role = userRole;
 
-  const { userBasicInformation, userUsagePreferences } = req.body.profile;
+  const profile_data = req.body.profile ? JSON.parse(req.body.profile) : {}; // 👈 parse لأن FormData يرسل JSON كـ string
+  const { userBasicInformation, userUsagePreferences } = profile_data;
+
+  // 👈 الصورة من الملف المرفوع
+  const profilePicture = req.files?.image?.[0]
+    ? `/uploads/images/${req.files.image[0].filename}`
+    : userBasicInformation?.profilePicture || null;
+
   let updateData = {};
   if (userBasicInformation) {
     updateData = {
@@ -270,7 +277,7 @@ const userProfile = asyncHandler(async (req, res, next) => {
       city: userBasicInformation.city,
       phoneNumber: userBasicInformation.phoneNumber,
       bio: userBasicInformation.bio,
-      profilePicture: userBasicInformation.profilePicture,
+      profilePicture, // 👈
     };
   }
   if (userUsagePreferences) {
@@ -290,7 +297,6 @@ const userProfile = asyncHandler(async (req, res, next) => {
   res.status(200).json({ status: "SUCCESS", message: "Onboarding completed successfully. Welcome to DZ Food Community!", data: { user }, errors: null });
 });
 
-//---------10-------
 const restaurantProfile = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
   const userRole = req.body.role;
@@ -305,14 +311,20 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
   userRecord.isOnboardingCompleted = true;
   userRecord.role = userRole;
 
-  const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails, restaurantServices } = req.body.profile;
-  let updateData = {};
+  const profile_data = req.body.profile ? JSON.parse(req.body.profile) : {}; // 👈
+  const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails, restaurantServices } = profile_data;
 
+  // 👈 الصورة من الملف المرفوع
+  const restaurantLogoUrl = req.files?.image?.[0]
+    ? `/uploads/images/${req.files.image[0].filename}`
+    : restaurantBasicInformation?.restaurantLogoUrl || null;
+
+  let updateData = {};
   if (restaurantBasicInformation) {
     updateData = {
       bio: restaurantBasicInformation.bio,
       restaurantName: restaurantBasicInformation.restaurantName,
-      restaurantLogoUrl: restaurantBasicInformation.restaurantLogoUrl,
+      restaurantLogoUrl, // 👈
       businessEmail: restaurantBasicInformation.businessEmail,
       phoneNumber: restaurantBasicInformation.phoneNumber,
     };
