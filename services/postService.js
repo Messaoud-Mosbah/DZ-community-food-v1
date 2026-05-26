@@ -143,6 +143,30 @@ const getAllPosts = asyncHandler(async (req, res) => {
   });
 });
 
+const otherPosts = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const cursor = req.query.cursor ? new Date(req.query.cursor) : null;
+  const limit = parseInt(req.query.limit) || 10;
+
+  const whereCondition = { userId: id };
+  if (cursor) whereCondition.createdAt = { [Op.lt]: cursor };
+
+  const posts = await Post.findAll({
+    where: whereCondition,
+    limit,
+    order: [["createdAt", "DESC"]],
+    include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
+  });
+
+  const postsWithMeta = await attachMetaToPosts(posts, id);
+  const nextCursor = posts.length ? posts[posts.length - 1].createdAt : null;
+
+  res.status(200).json({
+    status: "SUCCESS",
+    data: { results: posts.length, nextCursor, posts: postsWithMeta },
+  });
+});
+//
 const getMyPosts = asyncHandler(async (req, res) => {
   const { id } = req.authenticatedUser;
   const cursor = req.query.cursor ? new Date(req.query.cursor) : null;
@@ -447,4 +471,5 @@ module.exports = {
   getMyLikedPosts,
   toggleSavePost,
   getMySavedPosts,
+  otherPosts
 };

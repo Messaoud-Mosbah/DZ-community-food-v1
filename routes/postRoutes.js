@@ -17,6 +17,8 @@ const uploadFields = upload.fields([{ name: "images", maxCount: 10 }, { name: "v
 router.get("/",        ...auth, validateGetPosts, postService.getAllPosts);
 router.post("/",       ...auth, uploadFields, validateCreatePost, postService.createPost);
 router.get("/my-posts",...auth, postService.getMyPosts);
+router.get("/other-posts/:id",...auth, postService.otherPosts);
+
 router.get("/pin/:id", ...auth, postService.togglePin);
 
 // ── LIKES ─────────────────────────────────────────────────────────

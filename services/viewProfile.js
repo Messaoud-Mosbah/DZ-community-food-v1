@@ -45,7 +45,6 @@ exports.getUserProfileById = asyncHandler(async (req, res, next) => {
     delete profile.RestaurantProfile;
   }
 
-  delete profile.role;
 
   res.status(200).json({ status: "SUCCESS", data: { user: profile }, errors: null });
 });
