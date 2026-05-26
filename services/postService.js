@@ -385,7 +385,7 @@ include: [
   res.status(200).json({
     status: "SUCCESS",
     results: likedPosts.length,
-    data: { likedPosts: postsWithMeta },
+    data: { posts: postsWithMeta },
   });
 });
 
