@@ -143,14 +143,14 @@ const signin = asyncHandler(async (req, res, next) => {
 
 //---------5-------
 const logout = asyncHandler(async (req, res, next) => {
-  const user = await User.findByPk(req.user.id);
+  const user = await User.findByPk(req.authenticatedUser.id);
   if (!user) return next(new ApiError("User not found", 404));
 
   user.isLoggedOut = true;
   await user.save({ fields: ["isLoggedOut"] });
+  
   res.status(200).json({ status: "SUCCESS", message: "Logged out successfully. See you soon!", data: null, errors: null });
 });
-
 //---------6-------
 const forgetPassword = asyncHandler(async (req, res, next) => {
   const { identifier } = req.body;
