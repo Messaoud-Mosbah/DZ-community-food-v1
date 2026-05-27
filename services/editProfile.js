@@ -2,65 +2,104 @@ const upload = require("../middlewares/uploadMiddleware");
 const asyncHandler = require("express-async-handler");
 
 exports.editUserProfile = asyncHandler(async (req, res, next) => {
-    const userId = req.authenticatedUser.id;
-    const user = await User.findByPk(userId);
-    if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
+  const userId = req.authenticatedUser.id;
+  const user = await User.findByPk(userId);
+  if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
-    let profile = await UserProfile.findOne({ where: { userId } });
-    if (!profile) profile = await UserProfile.create({ userId });
+  let profile = await UserProfile.findOne({ where: { userId } });
+  if (!profile) profile = await UserProfile.create({ userId });
 
-    const profile_data = req.body.profile ? JSON.parse(req.body.profile) : {}; // 👈
-    const { userBasicInformation, userUsagePreferences } = profile_data;
+  // الصورة: إذا جاء فايل → حدث، إذا جاء فارغ → احذف، إذا ما جاء شي → خلها كما هي
+  if (req.files?.avatarImageFile?.[0]) {
+    profile.profilePicture = `/uploads/images/${req.files.avatarImageFile[0].filename}`;
+  } else if (req.body.avatarImageFile === "") {
+    profile.profilePicture = null;
+  }
 
-    // 👈 الصورة من الملف المرفوع
-    if (req.files?.image?.[0]) {
-        profile.profilePicture = `/uploads/images/${req.files.image[0].filename}`;
+  // حدث بس الحقول اللي جات في الـ request
+  const fields = {
+    fullName:        "profile-userBasicInformation-fullName",
+    city:            "profile-userBasicInformation-city",
+    phoneNumber:     "profile-userBasicInformation-phoneNumber",
+    bio:             "profile-userBasicInformation-bio",
+    usageGoal:       "profile-userUsagePreferences-usageGoal",
+    kitchenCategory: "profile-userUsagePreferences-kitchenCategory",
+  };
+
+  Object.entries(fields).forEach(([profileField, bodyKey]) => {
+    if (req.body[bodyKey] !== undefined) {
+      const value = req.body[bodyKey];
+      // usageGoal و kitchenCategory دايماً array
+      if (profileField === "usageGoal" || profileField === "kitchenCategory") {
+        profile[profileField] = Array.isArray(value) ? value : [value];
+      } else {
+        profile[profileField] = value;
+      }
     }
+  });
 
-    if (userBasicInformation) updateFields(profile, userBasicInformation, ["fullName", "city", "phoneNumber", "bio"]);
-    if (userUsagePreferences) updateFields(profile, userUsagePreferences, ["usageGoal", "kitchenCategory"]);
+  await profile.save();
 
-    await profile.save();
-
-    const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
-    res.status(200).json({ status: "SUCCESS", message: "User profile updated successfully", data: { user: newUser }, errors: null });
+  const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
+  res.status(200).json({ status: "SUCCESS", message: "User profile updated successfully", data: { user: newUser }, errors: null });
 });
 
+
 exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
-    const userId = req.authenticatedUser.id;
-    const user = await User.findByPk(userId);
-    if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
+  const userId = req.authenticatedUser.id;
+  const user = await User.findByPk(userId);
+  if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
-    let profile = await RestaurantProfile.findOne({ where: { userId } });
-    if (!profile) {
-        profile = await RestaurantProfile.create({
-            userId,
-            services: { dineIn: "NO", takeAway: "NO", delivery: "NO", reservation: "NO", parkAvailability: "NO" },
-            workingDays: [],
-            kitchenCategory: []
-        });
+  let profile = await RestaurantProfile.findOne({ where: { userId } });
+  if (!profile) {
+    profile = await RestaurantProfile.create({
+      userId,
+      services: { dineIn: "NO", takeAway: "NO", delivery: "NO", reservation: "NO", parkAvailability: "NO" },
+      workingDays: [],
+      kitchenCategory: [],
+    });
+  }
+
+  // الصورة: إذا جاء فايل → حدث، إذا جاء فارغ → احذف، إذا ما جاء شي → خلها كما هي
+  if (req.files?.avatarImageFile?.[0]) {
+    profile.restaurantLogoUrl = `/uploads/images/${req.files.avatarImageFile[0].filename}`;
+  } else if (req.body.avatarImageFile === "") {
+    profile.restaurantLogoUrl = null;
+  }
+
+  // حدث بس الحقول اللي جات في الـ request
+  const fields = {
+    restaurantName: "profile-restaurantBasicInformation-restaurantName",
+    businessEmail:  "profile-restaurantBasicInformation-businessEmail",
+    phoneNumber:    "profile-restaurantBasicInformation-phoneNumber",
+    bio:            "profile-restaurantBasicInformation-bio",
+    city:           "profile-restaurantLocationAndContact-city",
+    street:         "profile-restaurantLocationAndContact-street",
+    postalCode:     "profile-restaurantLocationAndContact-postalCode",
+    googleMapsLink: "profile-restaurantLocationAndContact-googleMapsLink",
+    kitchenCategory:"profile-restaurantDetails-kitchenCategory",
+    workingDays:    "profile-restaurantDetails-workingDays",
+    services:       "profile-restaurantServices",
+  };
+
+  Object.entries(fields).forEach(([profileField, bodyKey]) => {
+    if (req.body[bodyKey] !== undefined) {
+      const value = req.body[bodyKey];
+
+      if (profileField === "kitchenCategory" || profileField === "workingDays") {
+        profile[profileField] = Array.isArray(value) ? value : [value];
+      } else if (profileField === "services") {
+        profile[profileField] = typeof value === "string" ? JSON.parse(value) : value;
+      } else {
+        profile[profileField] = value;
+      }
     }
+  });
 
-    const profile_data = req.body.profile ? JSON.parse(req.body.profile) : {}; // 👈
-    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails, restaurantServices } = profile_data;
+  await profile.save();
 
-    // 👈 الصورة من الملف المرفوع
-    if (req.files?.image?.[0]) {
-        profile.restaurantLogoUrl = `/uploads/images/${req.files.image[0].filename}`;
-    }
-
-    if (restaurantBasicInformation) updateFields(profile, restaurantBasicInformation, ["restaurantName", "businessEmail", "phoneNumber", "bio"]);
-    if (restaurantLocationAndContact) updateFields(profile, restaurantLocationAndContact, ["city", "street", "postalCode", "googleMapsLink"]);
-    if (restaurantDetails) {
-        if (restaurantDetails.kitchenCategory !== undefined) profile.kitchenCategory = restaurantDetails.kitchenCategory;
-        if (restaurantDetails.workingDays !== undefined) profile.workingDays = restaurantDetails.workingDays;
-    }
-    if (restaurantServices !== undefined) profile.services = restaurantServices;
-
-    await profile.save();
-
-    const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
-    res.status(200).json({ status: "SUCCESS", message: "Restaurant profile updated successfully", data: { user: newUser }, errors: null });
+  const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
+  res.status(200).json({ status: "SUCCESS", message: "Restaurant profile updated successfully", data: { user: newUser }, errors: null });
 });
 exports.editAccount = asyncHandler(async (req, res, next) => {
     const { userName, currentPassword, newPassword, newPasswordConfirm, email } = req.body;
