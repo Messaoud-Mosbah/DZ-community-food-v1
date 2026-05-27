@@ -2,9 +2,7 @@ const multer = require("multer");
 const path = require("path");
 
 const storage = multer.diskStorage({
-  //path for store files
   destination: (req, file, cb) => {
-    // image ou video → dossier différent
     if (file.mimetype.startsWith("image/")) {
       cb(null, "uploads/images/");
     } else if (file.mimetype.startsWith("video/")) {
@@ -17,20 +15,13 @@ const storage = multer.diskStorage({
     const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
     cb(null, uniqueName);
   },
-}); //exemple : 1719950200000-482938292.png
-
-// const fileFilter = (req, file, cb) => {
-//   const allowed = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4']
-//   if (allowed.includes(file.mimetype)) {
-//     cb(null, true)
-//   } else {
-//     cb(new Error('Unsupported format'), false)
-//   }
-// }
+});
 
 const fileFilter = (req, file, cb) => {
   if (
-    (file.fieldname === "images" || file.fieldname === "image") &&
+    (file.fieldname === "images" ||
+      file.fieldname === "image" ||
+      file.fieldname === "avatarImageFile") &&
     file.mimetype.startsWith("image/")
   ) {
     cb(null, true);
