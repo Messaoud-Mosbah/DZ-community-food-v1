@@ -163,85 +163,68 @@ const restaurantProfileValidator = [
     .withMessage("Role must be RESTAURANT for this endpoint."),
 
   // --- restaurantBasicInformation ---
-  check("profile.restaurantBasicInformation.restaurantName")
+  check("profile-restaurantBasicInformation-restaurantName")
     .notEmpty()
     .withMessage("Restaurant name is required."),
 
-  check("profile.restaurantBasicInformation.phoneNumber")
+  check("profile-restaurantBasicInformation-phoneNumber")
     .notEmpty()
     .withMessage("Restaurant phone number is required.")
     .matches(/^(0)(5|6|7|2|3|4)\d{8}$/)
     .withMessage("Invalid Algerian phone number."),
 
   // --- restaurantLocationAndContact ---
-  check("profile.restaurantLocationAndContact.city")
+  check("profile-restaurantLocationAndContact-city")
     .notEmpty()
     .withMessage("City is required."),
 
-  check("profile.restaurantLocationAndContact.street").optional(),
+  check("profile-restaurantLocationAndContact-street").optional(),
 
-  check("profile.restaurantLocationAndContact.googleMapsLink")
+  check("profile-restaurantLocationAndContact-googleMapsLink")
     .notEmpty()
     .withMessage("googleMapsLink is required.")
     .isURL()
-    .withMessage(" Enter a valid URL."),
+    .withMessage("Enter a valid URL."),
 
-  //--- restaurantDetails ---
-  check("profile.restaurantDetails.kitchenCategory")
-    .isArray({ min: 1 })
-    .withMessage("Select at least one kitchen category.")
+  // --- restaurantDetails ---
+  check("profile-restaurantDetails-kitchenCategory")
     .custom((value) => {
-      const isValid = value.every((val) => KITCHEN_TYPES.includes(val));
-      if (!isValid)
-        throw new Error("One or more selected categories are invalid.");
+      const arr = Array.isArray(value) ? value : [value];
+      if (arr.length < 1) throw new Error("Select at least one kitchen category.");
+      const isValid = arr.every((val) => KITCHEN_TYPES.includes(val));
+      if (!isValid) throw new Error("One or more selected categories are invalid.");
       return true;
     }),
 
-  check("profile.restaurantDetails.workingDays")
-    .isArray({ min: 1 })
-    .withMessage(" working Days must be an array.")
+  check("profile-restaurantDetails-workingDays")
     .custom((value) => {
+      const arr = Array.isArray(value) ? value : [value];
+      if (arr.length < 1) throw new Error("Working days must have at least one entry.");
       const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-      value.forEach((item) => {
-        if (!DAYS_OF_WEEK.includes(item.day))
-          throw new Error(`Invalid day: ${item.day}`);
-        if (!timeRegex.test(item.from) || !timeRegex.test(item.to))
-          throw new Error(`Invalid time format in ${item.day}`);
+      arr.forEach((item) => {
+        const parsed = typeof item === "string" ? JSON.parse(item) : item;
+        if (!DAYS_OF_WEEK.includes(parsed.day))
+          throw new Error(`Invalid day: ${parsed.day}`);
+        if (!timeRegex.test(parsed.from) || !timeRegex.test(parsed.to))
+          throw new Error(`Invalid time format in ${parsed.day}`);
       });
       return true;
     }),
 
   // --- restaurantServices ---
-
-  // check("profile.restaurantServices")
-  //   .isArray({ min: 1 }).withMessage("Select at least one kitchen category.")
-  //   .custom((value) => {
-  //     const allowedKeys = ["dineIn", "takeAway", "delivery", "reservation", "parkAvailability"];
-  //     Object.keys(value).forEach((key) => {
-  //       if (!allowedKeys.includes(key)) throw new Error(`Invalid service key: ${key}`);
-  //       if (!["YES", "NO"].includes(value[key])) throw new Error(`Service '${key}' must be YES or NO.`);
-  //     });
-  //     return true;
-  //   }),
-  check("profile.restaurantServices")
-    .notEmpty()
-    .withMessage("Services are required.")
+  check("profile-restaurantServices")
     .custom((value) => {
-      const allowedKeys = [
-        "dineIn",
-        "takeAway",
-        "delivery",
-        "reservation",
-        "parkAvailability",
-      ];
-      Object.keys(value).forEach((key) => {
+      const parsed = typeof value === "string" ? JSON.parse(value) : value;
+      const allowedKeys = ["dineIn", "takeAway", "delivery", "reservation", "parkAvailability"];
+      Object.keys(parsed).forEach((key) => {
         if (!allowedKeys.includes(key))
           throw new Error(`Invalid service key: ${key}`);
-        if (!["YES", "NO"].includes(value[key]))
+        if (!["YES", "NO"].includes(parsed[key]))
           throw new Error(`Service '${key}' must be YES or NO.`);
       });
       return true;
     }),
+
   validatorMiddleware,
 ];
 module.exports = {

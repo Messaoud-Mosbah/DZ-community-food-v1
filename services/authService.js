@@ -262,28 +262,22 @@ const userProfile = asyncHandler(async (req, res, next) => {
   userRecord.isOnboardingCompleted = true;
   userRecord.role = userRole;
 
-  const profile_data = req.body.profile ? JSON.parse(req.body.profile) : {}; // 👈 parse لأن FormData يرسل JSON كـ string
-  const { userBasicInformation, userUsagePreferences } = profile_data;
+  const profilePicture = req.files?.avatarImageFile?.[0]
+    ? `/uploads/images/${req.files.avatarImageFile[0].filename}`
+    : null;
 
-  // 👈 الصورة من الملف المرفوع
-  const profilePicture = req.files?.image?.[0]
-    ? `/uploads/images/${req.files.image[0].filename}`
-    : userBasicInformation?.profilePicture || null;
+  const usageGoal = req.body["profile-userUsagePreferences-usageGoal"];
+  const kitchenCategory = req.body["profile-userUsagePreferences-kitchenCategory"];
 
-  let updateData = {};
-  if (userBasicInformation) {
-    updateData = {
-      fullName: userBasicInformation.fullName,
-      city: userBasicInformation.city,
-      phoneNumber: userBasicInformation.phoneNumber,
-      bio: userBasicInformation.bio,
-      profilePicture, // 👈
-    };
-  }
-  if (userUsagePreferences) {
-    updateData.usageGoal = userUsagePreferences.usageGoal;
-    updateData.kitchenCategory = userUsagePreferences.kitchenCategory;
-  }
+  const updateData = {
+    fullName:        req.body["profile-userBasicInformation-fullName"],
+    city:            req.body["profile-userBasicInformation-city"],
+    phoneNumber:     req.body["profile-userBasicInformation-phoneNumber"],
+    bio:             req.body["profile-userBasicInformation-bio"],
+    profilePicture,
+    usageGoal:       Array.isArray(usageGoal) ? usageGoal : [usageGoal],
+    kitchenCategory: Array.isArray(kitchenCategory) ? kitchenCategory : [kitchenCategory],
+  };
 
   let profile = await UserProfile.findOne({ where: { userId } });
   if (!profile) {
@@ -311,40 +305,32 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
   userRecord.isOnboardingCompleted = true;
   userRecord.role = userRole;
 
-  const profile_data = req.body.profile ? JSON.parse(req.body.profile) : {}; // 👈
-  const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails, restaurantServices } = profile_data;
+  const restaurantLogoUrl = req.files?.avatarImageFile?.[0]
+    ? `/uploads/images/${req.files.avatarImageFile[0].filename}`
+    : null;
 
-  // 👈 الصورة من الملف المرفوع
-  const restaurantLogoUrl = req.files?.image?.[0]
-    ? `/uploads/images/${req.files.image[0].filename}`
-    : restaurantBasicInformation?.restaurantLogoUrl || null;
+  const kitchenCategory = req.body["profile-restaurantDetails-kitchenCategory"];
+  const workingDays = req.body["profile-restaurantDetails-workingDays"];
+  const services = req.body["profile-restaurantServices"];
 
-  let updateData = {};
-  if (restaurantBasicInformation) {
-    updateData = {
-      bio: restaurantBasicInformation.bio,
-      restaurantName: restaurantBasicInformation.restaurantName,
-      restaurantLogoUrl, // 👈
-      businessEmail: restaurantBasicInformation.businessEmail,
-      phoneNumber: restaurantBasicInformation.phoneNumber,
-    };
-  }
-  if (restaurantLocationAndContact) {
-    updateData = {
-      ...updateData,
-      city: restaurantLocationAndContact.city,
-      street: restaurantLocationAndContact.street,
-      postalCode: restaurantLocationAndContact.postalCode,
-      googleMapsLink: restaurantLocationAndContact.googleMapsLink,
-    };
-  }
-  if (restaurantDetails) {
-    updateData.kitchenCategory = restaurantDetails.kitchenCategory;
-    if (restaurantDetails.workingDays && Array.isArray(restaurantDetails.workingDays)) {
-      updateData.workingDays = restaurantDetails.workingDays;
-    }
-  }
-  if (restaurantServices) updateData.services = restaurantServices;
+  const updateData = {
+    // restaurantBasicInformation
+    bio:               req.body["profile-restaurantBasicInformation-bio"],
+    restaurantName:    req.body["profile-restaurantBasicInformation-restaurantName"],
+    restaurantLogoUrl,
+    businessEmail:     req.body["profile-restaurantBasicInformation-businessEmail"],
+    phoneNumber:       req.body["profile-restaurantBasicInformation-phoneNumber"],
+    // restaurantLocationAndContact
+    city:              req.body["profile-restaurantLocationAndContact-city"],
+    street:            req.body["profile-restaurantLocationAndContact-street"],
+    postalCode:        req.body["profile-restaurantLocationAndContact-postalCode"],
+    googleMapsLink:    req.body["profile-restaurantLocationAndContact-googleMapsLink"],
+    // restaurantDetails
+    kitchenCategory:   Array.isArray(kitchenCategory) ? kitchenCategory : [kitchenCategory],
+    workingDays:       Array.isArray(workingDays) ? workingDays : [workingDays],
+    // restaurantServices
+    services:          Array.isArray(services) ? services : [services],
+  };
 
   let profile = await RestaurantProfile.findOne({ where: { userId } });
   if (!profile) {
@@ -357,7 +343,6 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(userRecord.id, { include: [UserProfile, RestaurantProfile] });
   res.status(200).json({ status: "SUCCESS", message: "Onboarding completed successfully. Welcome to DZ Food Community!", data: { user }, errors: null });
 });
-
 //---------protect-------
 const protect = asyncHandler(async (req, res, next) => {
   let token;

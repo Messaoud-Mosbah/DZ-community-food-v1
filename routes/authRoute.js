@@ -25,8 +25,8 @@ router.get("/verify-reset-password-token/:token",  verifyResetToken);
 router.post("/reset-password",                     validatePassword, resetPassword);
 
 // ── ONBOARDING ────────────────────────────────────────────────────
-router.patch("/onboarding/user", protect,allwodTo("USER"), upload.fields([{ name: "image", maxCount: 1 }]), userProfile);
-router.patch("/onboarding/restaurant", protect,allwodTo("RESTAURANT"), upload.fields([{ name: "image", maxCount: 1 }]), restaurantProfile);
+router.patch("/onboarding/user", protect, allwodTo("USER"), upload.fields([{ name: "avatarImageFile", maxCount: 1 }]), userProfile);
+router.patch("/onboarding/restaurant", protect, allwodTo("RESTAURANT"), upload.fields([{ name: "avatarImageFile", maxCount: 1 }]), restaurantProfile);
 
 // ── FOLLOW ────────────────────────────────────────────────────────
 router.post("/:userId/follow", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), toggleFollow);
