@@ -310,8 +310,24 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
     : null;
 
   const kitchenCategory = req.body["profile-restaurantDetails-kitchenCategory"];
-  const workingDays = req.body["profile-restaurantDetails-workingDays"];
   const services = req.body["profile-restaurantServices"];
+
+  // بناء workingDays من الـ flat fields
+  const days   = req.body["profile-restaurantDetails-workingDays-day"];
+  const froms  = req.body["profile-restaurantDetails-workingDays-from"];
+  const tos    = req.body["profile-restaurantDetails-workingDays-to"];
+
+  const buildWorkingDays = (days, froms, tos) => {
+    if (!days) return [];
+    const daysArr  = Array.isArray(days)  ? days  : [days];
+    const fromsArr = Array.isArray(froms) ? froms : [froms];
+    const tosArr   = Array.isArray(tos)   ? tos   : [tos];
+    return daysArr.map((day, i) => ({
+      day,
+      from: fromsArr[i],
+      to:   tosArr[i],
+    }));
+  };
 
   const updateData = {
     // restaurantBasicInformation
@@ -327,9 +343,9 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
     googleMapsLink:    req.body["profile-restaurantLocationAndContact-googleMapsLink"],
     // restaurantDetails
     kitchenCategory:   Array.isArray(kitchenCategory) ? kitchenCategory : [kitchenCategory],
-    workingDays:       Array.isArray(workingDays) ? workingDays : [workingDays],
+    workingDays:       buildWorkingDays(days, froms, tos),
     // restaurantServices
-    services:          Array.isArray(services) ? services : [services],
+    services:          typeof services === "string" ? JSON.parse(services) : services,
   };
 
   let profile = await RestaurantProfile.findOne({ where: { userId } });
