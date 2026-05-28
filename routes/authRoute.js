@@ -27,6 +27,7 @@ router.post("/reset-password",                     validatePassword, resetPasswo
 // ── ONBOARDING ────────────────────────────────────────────────────
 router.patch("/onboarding/user", protect,  upload.fields([{ name: "avatarImageFile", maxCount: 1 }]), userProfile);
 router.patch("/onboarding/restaurant", protect ,upload.fields([{ name: "avatarImageFile", maxCount: 1 }]), restaurantProfile);
+
 // ── FOLLOW ────────────────────────────────────────────────────────
 router.post("/:userId/follow", protect, allwodTo("USER", "RESTAURANT", "ADMIN"), toggleFollow);
 

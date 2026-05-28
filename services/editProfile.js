@@ -1,5 +1,17 @@
 const upload = require("../middlewares/uploadMiddleware"); 
 const asyncHandler = require("express-async-handler");
+const { User, UserProfile, RestaurantProfile } = require("../models");
+const userAttributes = [
+  "id",
+  "userName",
+  "email",
+  "slug",
+  "role",
+  "followersCount",
+  "followingCount",
+  "isOnboardingCompleted",
+  "createdAt",
+];
 
 exports.editUserProfile = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
@@ -9,14 +21,12 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
   let profile = await UserProfile.findOne({ where: { userId } });
   if (!profile) profile = await UserProfile.create({ userId });
 
-  // الصورة: إذا جاء فايل → حدث، إذا جاء فارغ → احذف، إذا ما جاء شي → خلها كما هي
   if (req.files?.avatarImageFile?.[0]) {
     profile.profilePicture = `/uploads/images/${req.files.avatarImageFile[0].filename}`;
   } else if (req.body.avatarImageFile === "") {
     profile.profilePicture = null;
   }
 
-  // حدث بس الحقول اللي جات في الـ request
   const fields = {
     fullName:        "profile-userBasicInformation-fullName",
     city:            "profile-userBasicInformation-city",
@@ -29,7 +39,6 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
   Object.entries(fields).forEach(([profileField, bodyKey]) => {
     if (req.body[bodyKey] !== undefined) {
       const value = req.body[bodyKey];
-      // usageGoal و kitchenCategory دايماً array
       if (profileField === "usageGoal" || profileField === "kitchenCategory") {
         profile[profileField] = Array.isArray(value) ? value : [value];
       } else {
@@ -60,14 +69,14 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // الصورة: إذا جاء فايل → حدث، إذا جاء فارغ → احذف، إذا ما جاء شي → خلها كما هي
+  // الصورة
   if (req.files?.avatarImageFile?.[0]) {
     profile.restaurantLogoUrl = `/uploads/images/${req.files.avatarImageFile[0].filename}`;
   } else if (req.body.avatarImageFile === "") {
     profile.restaurantLogoUrl = null;
   }
 
-  // حدث بس الحقول اللي جات في الـ request
+  // الحقول العادية
   const fields = {
     restaurantName: "profile-restaurantBasicInformation-restaurantName",
     businessEmail:  "profile-restaurantBasicInformation-businessEmail",
@@ -78,15 +87,13 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     postalCode:     "profile-restaurantLocationAndContact-postalCode",
     googleMapsLink: "profile-restaurantLocationAndContact-googleMapsLink",
     kitchenCategory:"profile-restaurantDetails-kitchenCategory",
-    workingDays:    "profile-restaurantDetails-workingDays",
     services:       "profile-restaurantServices",
   };
 
   Object.entries(fields).forEach(([profileField, bodyKey]) => {
     if (req.body[bodyKey] !== undefined) {
       const value = req.body[bodyKey];
-
-      if (profileField === "kitchenCategory" || profileField === "workingDays") {
+      if (profileField === "kitchenCategory") {
         profile[profileField] = Array.isArray(value) ? value : [value];
       } else if (profileField === "services") {
         profile[profileField] = typeof value === "string" ? JSON.parse(value) : value;
@@ -95,6 +102,22 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
       }
     }
   });
+
+  const days  = req.body["profile-restaurantDetails-workingDays-day"];
+  const froms = req.body["profile-restaurantDetails-workingDays-from"];
+  const tos   = req.body["profile-restaurantDetails-workingDays-to"];
+
+  if (days !== undefined) {
+    const daysArr  = Array.isArray(days)  ? days  : [days];
+    const fromsArr = Array.isArray(froms) ? froms : [froms];
+    const tosArr   = Array.isArray(tos)   ? tos   : [tos];
+
+    profile.workingDays = daysArr.map((day, i) => ({
+      day,
+      from: fromsArr[i],
+      to:   tosArr[i],
+    }));
+  }
 
   await profile.save();
 
