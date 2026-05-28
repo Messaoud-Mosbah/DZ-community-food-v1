@@ -9,14 +9,12 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
   let profile = await UserProfile.findOne({ where: { userId } });
   if (!profile) profile = await UserProfile.create({ userId });
 
-  // الصورة: إذا جاء فايل → حدث، إذا جاء فارغ → احذف، إذا ما جاء شي → خلها كما هي
   if (req.files?.avatarImageFile?.[0]) {
     profile.profilePicture = `/uploads/images/${req.files.avatarImageFile[0].filename}`;
   } else if (req.body.avatarImageFile === "") {
     profile.profilePicture = null;
   }
 
-  // حدث بس الحقول اللي جات في الـ request
   const fields = {
     fullName:        "profile-userBasicInformation-fullName",
     city:            "profile-userBasicInformation-city",
@@ -29,7 +27,6 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
   Object.entries(fields).forEach(([profileField, bodyKey]) => {
     if (req.body[bodyKey] !== undefined) {
       const value = req.body[bodyKey];
-      // usageGoal و kitchenCategory دايماً array
       if (profileField === "usageGoal" || profileField === "kitchenCategory") {
         profile[profileField] = Array.isArray(value) ? value : [value];
       } else {
@@ -60,7 +57,6 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // الصورة: إذا جاء فايل → حدث، إذا جاء فارغ → احذف، إذا ما جاء شي → خلها كما هي
   if (req.files?.avatarImageFile?.[0]) {
     profile.restaurantLogoUrl = `/uploads/images/${req.files.avatarImageFile[0].filename}`;
   } else if (req.body.avatarImageFile === "") {
