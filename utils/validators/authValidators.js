@@ -1,6 +1,6 @@
 const { check, body, param } = require("express-validator");
 const validatorMiddleware = require("../../middlewares/validatorMiddleware");
-const User = require("../../models/userModel");
+const User = require("../../models/user-info/userModel");
 const KITCHEN_TYPES = [
   "vegetarian",
   "Fast Food",

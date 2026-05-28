@@ -80,6 +80,10 @@ app.all("*", (req, res, next) => {
 
 app.use(globalError);
 
+app.use((err, req, res, next) => {
+  console.error("ERROR DETAILS:", err);
+  res.status(500).json({ status: "ERROR", message: "Something went very wrong!" });
+});
 // ── Database Connection (مع cache لتفادي إعادة الاتصال في كل request) ──
 let isConnected = false;
 

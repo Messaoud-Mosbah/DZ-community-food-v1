@@ -14,7 +14,7 @@ const auth = [protect, allwodTo("USER", "RESTAURANT", "ADMIN")];
 const uploadFields = upload.fields([{ name: "images", maxCount: 10 }, { name: "video", maxCount: 1 }]);
 
 // ── POSTS ─────────────────────────────────────────────────────────
-router.get("/",        ...auth, validateGetPosts, postService.getAllPosts);
+router.get("/",        ...auth, postService.getAllPosts);
 router.post("/",       ...auth, uploadFields, validateCreatePost, postService.createPost);
 router.get("/my-posts",...auth, postService.getMyPosts);
 router.get("/other-posts/:id",...auth, postService.otherPosts);

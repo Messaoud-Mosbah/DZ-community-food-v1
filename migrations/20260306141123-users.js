@@ -24,11 +24,7 @@ module.exports = {
         allowNull: false,
         unique: true
       },
-      pendingEmail: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        defaultValue: null
-      },
+     
       password: {
         type: Sequelize.STRING,
         allowNull: false
@@ -77,7 +73,6 @@ module.exports = {
         allowNull: true,
         defaultValue: null
       },
-      // ✅ إضافة عدادات المتابعين
       followersCount: {
         type: Sequelize.INTEGER,
         defaultValue: 0

@@ -16,8 +16,10 @@ exports.createUser = asyncHandler(async (req, res) => {
     const { userName, email, password, role } = req.body;
     const user = await User.create({ userName, email, password, role: role || "USER" });
     const jwtToken = await GENERATE_TOKEN({ id: user.id, email: user.email, userName: user.userName });
-    user.password = undefined;
-    res.status(201).json({ status: 'SUCCESS', message: "User created successfully.", data: { user, jwtToken }, errors: null });
+    
+    const { password: _, ...userData } = user.toJSON();
+    res.status(201).json({ status: 'SUCCESS', message: "User created successfully.", 
+        data: { user: userData, jwtToken }, errors: null });
 });
 
 // 2. Get All Users
@@ -36,7 +38,7 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
 
     res.status(200).json({
         status: "SUCCESS",
-        data: { results: count, totalPages: Math.ceil(count / limit), users },
+        data: { total: count, results: users.length, totalPages: Math.ceil(count / limit), users },
         errors: null
     });
 });
@@ -70,8 +72,8 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
     if (email) user.email = email;
     await user.save();
 
-    user.password = undefined;
-    res.status(200).json({ status: "SUCCESS", message: "User updated successfully", data: { user }, errors: null });
+    const { password: _, ...userData } = user.toJSON();
+    res.status(200).json({ status: "SUCCESS", message: "User updated successfully", data: { user: userData }, errors: null });
 });
 
 // 6. Delete User
@@ -89,10 +91,10 @@ exports.changeUserPassword = asyncHandler(async (req, res, next) => {
     const isCorrect = await bcrypt.compare(req.body.currentPassword, user.password);
     if (!isCorrect) return next(new ApiError("Current password is wrong", 401));
 
-    user.password = req.body.password;
+    user.password = await bcrypt.hash(req.body.password, 12); 
     user.passwordChangedAt = Date.now();
     await user.save();
 
-    user.password = undefined;
-    res.status(200).json({ status: "SUCCESS", message: "Password changed successfully", data: { user }, errors: null });
+    const { password: _, ...userData } = user.toJSON();
+    res.status(200).json({ status: "SUCCESS", message: "Password changed successfully", data: { user: userData }, errors: null });
 });
