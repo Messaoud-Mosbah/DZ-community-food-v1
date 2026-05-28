@@ -85,14 +85,17 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
       const value = req.body[bodyKey];
       if (profileField === "kitchenCategory") {
         profile[profileField] = Array.isArray(value) ? value : [value];
+        profile.changed("kitchenCategory", true);
       } else if (profileField === "services") {
         profile[profileField] = typeof value === "string" ? JSON.parse(value) : value;
+        profile.changed("services", true);
       } else {
         profile[profileField] = value;
       }
     }
   });
 
+  // workingDays من الـ flat fields
   const days  = req.body["profile-restaurantDetails-workingDays-day"];
   const froms = req.body["profile-restaurantDetails-workingDays-from"];
   const tos   = req.body["profile-restaurantDetails-workingDays-to"];
@@ -107,6 +110,7 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
       from: fromsArr[i],
       to:   tosArr[i],
     }));
+    profile.changed("workingDays", true);
   }
 
   await profile.save();
@@ -114,6 +118,7 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
   const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
   res.status(200).json({ status: "SUCCESS", message: "Restaurant profile updated successfully", data: { user: newUser }, errors: null });
 });
+
 exports.editAccount = asyncHandler(async (req, res, next) => {
     const { userName, currentPassword, newPassword, newPasswordConfirm, email } = req.body;
 
