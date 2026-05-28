@@ -43,7 +43,6 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
   res.status(200).json({ status: "SUCCESS", message: "User profile updated successfully", data: { user: newUser }, errors: null });
 });
 
-
 exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
   const user = await User.findByPk(userId);
@@ -77,7 +76,6 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     postalCode:     "profile-restaurantLocationAndContact-postalCode",
     googleMapsLink: "profile-restaurantLocationAndContact-googleMapsLink",
     kitchenCategory:"profile-restaurantDetails-kitchenCategory",
-    services:       "profile-restaurantServices",
   };
 
   Object.entries(fields).forEach(([profileField, bodyKey]) => {
@@ -86,16 +84,30 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
       if (profileField === "kitchenCategory") {
         profile[profileField] = Array.isArray(value) ? value : [value];
         profile.changed("kitchenCategory", true);
-      } else if (profileField === "services") {
-        profile[profileField] = typeof value === "string" ? JSON.parse(value) : value;
-        profile.changed("services", true);
       } else {
         profile[profileField] = value;
       }
     }
   });
 
-  // workingDays من الـ flat fields
+  // services من الـ flat fields
+  const serviceKeys = ["dineIn", "takeAway", "delivery", "reservation", "parkAvailability"];
+  const newServices = {};
+  let hasServices = false;
+
+  serviceKeys.forEach((key) => {
+    const val = req.body[`profile-restaurantServices-${key}`];
+    if (val !== undefined) {
+      newServices[key] = val;
+      hasServices = true;
+    }
+  });
+
+  if (hasServices) {
+    profile.services = { ...profile.services, ...newServices };
+    profile.changed("services", true);
+  }
+
   const days  = req.body["profile-restaurantDetails-workingDays-day"];
   const froms = req.body["profile-restaurantDetails-workingDays-from"];
   const tos   = req.body["profile-restaurantDetails-workingDays-to"];
