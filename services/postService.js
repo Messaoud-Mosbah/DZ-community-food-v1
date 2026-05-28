@@ -100,17 +100,25 @@ const createPost = asyncHandler(async (req, res) => {
 
   res.status(201).json({ status: "SUCCESS", data: { post: fullPost } });
 });
-
 const getAllPosts = asyncHandler(async (req, res) => {
-  const limit = parseInt(req.query.limit) || 20;
+  const limit = parseInt(req.query.limit) || 10;
   const cursor = req.query.cursor;
   const currentUserId = req.authenticatedUser?.id;
 
   let whereClause = {};
   if (cursor) {
-    const [cursorPinned, cursorDate] = cursor.split("_");
+    const separatorIndex = cursor.indexOf("_");
+    const cursorPinned = cursor.substring(0, separatorIndex);
+    const cursorDate = cursor.substring(separatorIndex + 1);
+    
     const isPinned = cursorPinned === "true";
     const lastDate = new Date(cursorDate);
+
+    // تحقق من صحة التاريخ قبل الاستخدام
+    if (isNaN(lastDate.getTime())) {
+      return res.status(400).json({ status: "ERROR", message: "Invalid cursor" });
+    }
+
     whereClause = {
       [Op.or]: [
         { isPinned, createdAt: { [Op.lt]: lastDate } },
@@ -132,9 +140,9 @@ const getAllPosts = asyncHandler(async (req, res) => {
   const postsWithMeta = await attachMetaToPosts(posts, currentUserId);
 
   let nextCursor = null;
-  if (posts.length > 0) {
+  if (posts.length === limit) { 
     const lastItem = posts[posts.length - 1];
-    nextCursor = `${lastItem.isPinned}_${lastItem.createdAt.toISOString()}`;
+    nextCursor = `${lastItem.isPinned}|${lastItem.createdAt.toISOString()}`;
   }
 
   res.status(200).json({
@@ -142,7 +150,6 @@ const getAllPosts = asyncHandler(async (req, res) => {
     data: { results: posts.length, nextCursor, posts: postsWithMeta },
   });
 });
-
 const otherPosts = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const cursor = req.query.cursor ? new Date(req.query.cursor) : null;

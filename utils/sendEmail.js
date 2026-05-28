@@ -1,11 +1,11 @@
 const nodemailer = require('nodemailer');
 
-const sendEmail = async ({ email, subject, message, html }) => { // أضفنا html هنا
+const sendEmail = async ({ email, subject, message, html }) => { 
   try {
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
-      secure: false, // true for 465, false for other ports
+      secure: false,
       auth: {
         user: process.env.EMAIL_USERNAME,
         pass: process.env.EMAIL_PASSWORD
@@ -13,11 +13,11 @@ const sendEmail = async ({ email, subject, message, html }) => { // أضفنا h
     });
 
     const info = await transporter.sendMail({
-      from: `"DZ Community Food" <${process.env.EMAIL_USERNAME}>`, 
+      from: `"Feed Me" <${process.env.EMAIL_USERNAME}>`, 
       to: email,
       subject: subject,
-      text: message, // النسخة الاحتياطية (نص عادي)
-      html: html     // النسخة الأساسية (روابط قابلة للضغط وتنسيق)
+      text: message, 
+      html: html    
     });
 
     console.log('Email sent successfully', info.messageId);

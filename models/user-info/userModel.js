@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { sequelize } = require("../config/database");
+const { sequelize } = require("../../config/database");
 const { Sequelize, DataTypes } = require('sequelize');
 const slugify = require("slugify");
 
@@ -82,11 +82,7 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       defaultValue: null,
     },
-    pendingEmail: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      defaultValue: null,
-    },
+   
     followersCount: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

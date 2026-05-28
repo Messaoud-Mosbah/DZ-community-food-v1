@@ -1,4 +1,6 @@
 const upload = require("../middlewares/uploadMiddleware"); 
+const { GENERATE_TOKEN } = require("../utils/createToken");
+
 const asyncHandler = require("express-async-handler");
 const { User, UserProfile, RestaurantProfile } = require("../models");
 const ApiError = require("../utils/apiError");

@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/database");
+const { sequelize } = require("../../config/database");
 
 const UserProfile = sequelize.define("UserProfile", {
   id: {
@@ -9,7 +9,7 @@ const UserProfile = sequelize.define("UserProfile", {
   },
   fullName: {
     type: DataTypes.STRING(100),
-    allowNull: true, // اجعلها true مؤقتاً لتجنب فشل الإنشاء التلقائي
+    allowNull: true, 
     defaultValue: "User Name", 
   },
   city: {
@@ -34,7 +34,7 @@ const UserProfile = sequelize.define("UserProfile", {
   usageGoal: {
     type: DataTypes.JSON,
     allowNull: true,
-    defaultValue: [], // إذا كانت مصفوفة، يفضل [] بدلاً من null
+    defaultValue: [], 
   },
   kitchenCategory: {
     type: DataTypes.JSON,
@@ -44,14 +44,14 @@ const UserProfile = sequelize.define("UserProfile", {
   userId: {
     type: DataTypes.UUID,
     unique: true,
-    allowNull: false, // لا يمكن وجود بروفايل بدون يوزر
+    allowNull: false, 
     references: {
       model: 'users',
       key: 'id',
     },
   },
 }, {
-  tableName: 'users_profiles', // تأكد أن الجدول بهذا الاسم في MySQL
+  tableName: 'users_profiles', 
   timestamps: true,
 });
 

@@ -23,7 +23,7 @@ module.exports = {
       },
       restaurantLogoUrl: {
         type: Sequelize.STRING,
-        defaultValue: "restaurant-default.png",
+        defaultValue:null,
       },
       city: { 
         type: Sequelize.STRING(50) 
@@ -45,7 +45,7 @@ module.exports = {
         type: Sequelize.JSON, 
       },
        bio: {
-  type: Sequelize.STRING, // أو TEXT إذا كان الكلام طويلاً جداً
+  type: Sequelize.STRING, 
   allowNull: true,
   defaultValue: null
 },

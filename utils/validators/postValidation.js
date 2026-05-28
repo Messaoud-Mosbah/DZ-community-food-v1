@@ -32,8 +32,8 @@ const validateGetPosts = asyncHandler(async (req, res, next) => {
     limit: Joi.number().integer().min(1).max(50).optional(),
   });
 
-  const { error } = schema.validate(req.query);
-  if (error) throw new ApiError(error.details[0].message, 400);
+  // const { error } = schema.validate(req.query);
+  // if (error) throw new ApiError(error.details[0].message, 400);
 
   next();
 });

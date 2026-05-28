@@ -1,5 +1,9 @@
 const asyncHandler = require("express-async-handler");
-const { User, UserProfile, RestaurantProfile, Follow } = require("../models");
+const User = require("../models/user-info/userModel");
+const UserProfile = require("../models/user-info/userProfileModel");
+const RestaurantProfile = require("../models/user-info/restaurantProfileModel");
+const { Follow  } = require("../models");
+
 const { GENERATE_TOKEN } = require("../utils/createToken");
 const bcrypt = require("bcryptjs");
 const ApiError = require("../utils/apiError");
@@ -34,7 +38,7 @@ const sendVerificationEmail = async (user) => {
   const htmlContent = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
         <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">DZ Community Food</h1>
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Feed Me</h1>
         </div>
         <div style="padding: 40px 30px;">
             <h2 style="color: #2d3436; margin-top: 0;">Welcome, ${user.userName}!</h2>
@@ -172,7 +176,7 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
   const htmlContent = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
             <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">DZ Community Food</h1>
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Feed Me</h1>
             </div>
             <div style="padding: 40px 30px;">
                 <h2 style="color: #2d3436; margin-top: 0;">Password Reset Request</h2>
