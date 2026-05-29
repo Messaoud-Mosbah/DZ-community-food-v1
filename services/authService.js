@@ -152,9 +152,10 @@ const logout = asyncHandler(async (req, res, next) => {
 
   user.isLoggedOut = true;
   await user.save({ fields: ["isLoggedOut"] });
-  
+
   res.status(200).json({ status: "SUCCESS", message: "Logged out successfully. See you soon!", data: null, errors: null });
 });
+
 //---------6-------
 const forgetPassword = asyncHandler(async (req, res, next) => {
   const { identifier } = req.body;
@@ -266,12 +267,11 @@ const userProfile = asyncHandler(async (req, res, next) => {
   userRecord.isOnboardingCompleted = true;
   userRecord.role = userRole;
 
-  const profilePicture = req.files?.avatarImageFile?.[0]
-    ? `/uploads/images/${req.files.avatarImageFile[0].filename}`
-    : null;
+  // ✅ Cloudinary يرجع url مباشرة
+  const profilePicture = req.files?.avatarImageFile?.[0]?.url ?? null;
 
   const usageGoal = req.body["profile-userUsagePreferences-usageGoal"];
-  const kitchenCategory = req.body["profile-userUsagePreferences-kitchenCategory"];
+  const kitchenCategory = req.body["profile-restaurantDetails-kitchenCategory"] ?? []; // ✅ إصلاح الـ typo
 
   const updateData = {
     fullName:        req.body["profile-userBasicInformation-fullName"],
@@ -309,14 +309,12 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
   userRecord.isOnboardingCompleted = true;
   userRecord.role = userRole;
 
-  const restaurantLogoUrl = req.files?.avatarImageFile?.[0]
-    ? `/uploads/images/${req.files.avatarImageFile[0].filename}`
-    : null;
+  // ✅ Cloudinary يرجع url مباشرة
+  const restaurantLogoUrl = req.files?.avatarImageFile?.[0]?.url ?? null;
 
   const kitchenCategory = req.body["profile-restaurantDetails-kitchenCategory"];
   const services = req.body["profile-restaurantServices"];
 
-  // بناء workingDays من الـ flat fields
   const days   = req.body["profile-restaurantDetails-workingDays-day"];
   const froms  = req.body["profile-restaurantDetails-workingDays-from"];
   const tos    = req.body["profile-restaurantDetails-workingDays-to"];
@@ -334,21 +332,17 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
   };
 
   const updateData = {
-    // restaurantBasicInformation
     bio:               req.body["profile-restaurantBasicInformation-bio"],
     restaurantName:    req.body["profile-restaurantBasicInformation-restaurantName"],
     restaurantLogoUrl,
     businessEmail:     req.body["profile-restaurantBasicInformation-businessEmail"],
     phoneNumber:       req.body["profile-restaurantBasicInformation-phoneNumber"],
-    // restaurantLocationAndContact
     city:              req.body["profile-restaurantLocationAndContact-city"],
     street:            req.body["profile-restaurantLocationAndContact-street"],
     postalCode:        req.body["profile-restaurantLocationAndContact-postalCode"],
     googleMapsLink:    req.body["profile-restaurantLocationAndContact-googleMapsLink"],
-    // restaurantDetails
     kitchenCategory:   Array.isArray(kitchenCategory) ? kitchenCategory : [kitchenCategory],
     workingDays:       buildWorkingDays(days, froms, tos),
-    // restaurantServices
     services:          typeof services === "string" ? JSON.parse(services) : services,
   };
 
@@ -363,6 +357,7 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(userRecord.id, { include: [UserProfile, RestaurantProfile] });
   res.status(200).json({ status: "SUCCESS", message: "Onboarding completed successfully. Welcome to DZ Food Community!", data: { user }, errors: null });
 });
+
 //---------protect-------
 const protect = asyncHandler(async (req, res, next) => {
   let token;

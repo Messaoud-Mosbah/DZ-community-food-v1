@@ -2,7 +2,7 @@ const { check } = require("express-validator");
 const validatorMiddleware = require("../../middlewares/validatorMiddleware");
 
 const KITCHEN_TYPES = [
-  "vegetarian",
+  "Vegetarian",
   "Fast Food",
   "Deserts & Sweets",
   "Seafood",

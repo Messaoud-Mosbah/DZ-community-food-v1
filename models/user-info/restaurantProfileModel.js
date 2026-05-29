@@ -2,7 +2,7 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../config/database");
 
 const KITCHEN_TYPES = [
-  "vegetarian",
+  "Vegetarian",
   "Fast Food",
   "Deserts & Sweets",
   "Seafood",

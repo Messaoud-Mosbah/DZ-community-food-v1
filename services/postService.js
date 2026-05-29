@@ -76,22 +76,26 @@ const createPost = asyncHandler(async (req, res) => {
   });
 
   const mediaData = [];
+  
+  // تعديل: حفظ رابط Cloudinary المباشر القادم من الـ Middleware
   images.forEach((img, index) => {
     mediaData.push({
       postId: post.id,
       type: "IMAGE",
-      url: `/uploads/images/${img.filename}`,
+      url: img.url, // الرابط السحابي الكامل
       order: index,
     });
   });
+
   if (video) {
     mediaData.push({
       postId: post.id,
       type: "VIDEO",
-      url: `/uploads/videos/${video.filename}`,
+      url: video.url, // الرابط السحابي الكامل للـ Video
       order: 0,
     });
   }
+
   if (mediaData.length > 0) await PostMedia.bulkCreate(mediaData);
 
   const fullPost = await Post.findByPk(post.id, {
@@ -100,6 +104,7 @@ const createPost = asyncHandler(async (req, res) => {
 
   res.status(201).json({ status: "SUCCESS", data: { post: fullPost } });
 });
+
 const getAllPosts = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const cursor = req.query.cursor;
@@ -114,7 +119,6 @@ const getAllPosts = asyncHandler(async (req, res) => {
     const isPinned = cursorPinned === "true";
     const lastDate = new Date(cursorDate);
 
-    // تحقق من صحة التاريخ قبل الاستخدام
     if (isNaN(lastDate.getTime())) {
       return res.status(400).json({ status: "ERROR", message: "Invalid cursor" });
     }
@@ -142,7 +146,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
   let nextCursor = null;
   if (posts.length === limit) { 
     const lastItem = posts[posts.length - 1];
-    nextCursor = `${lastItem.isPinned}|${lastItem.createdAt.toISOString()}`;
+    nextCursor = `${lastItem.isPinned}_${lastItem.createdAt.toISOString()}`; // تعديل بسيط للـ separator ليتوافق مع الـ split المكتوب فوق (_) بدلاً من (|)
   }
 
   res.status(200).json({
@@ -150,6 +154,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
     data: { results: posts.length, nextCursor, posts: postsWithMeta },
   });
 });
+
 const otherPosts = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const cursor = req.query.cursor ? new Date(req.query.cursor) : null;
@@ -173,7 +178,7 @@ const otherPosts = asyncHandler(async (req, res) => {
     data: { results: posts.length, nextCursor, posts: postsWithMeta },
   });
 });
-//
+
 const getMyPosts = asyncHandler(async (req, res) => {
   const { id } = req.authenticatedUser;
   const cursor = req.query.cursor ? new Date(req.query.cursor) : null;
@@ -243,21 +248,25 @@ const updatePost = asyncHandler(async (req, res, next) => {
     });
 
     const mediaData = [];
+    
+    // تعديل: استخدام روابط Cloudinary المباشرة عند التحديث
     images.forEach((img, index) => {
       mediaData.push({
         postId: post.id,
         type: "IMAGE",
-        url: `/uploads/images/${img.filename}`,
+        url: img.url,
         order: keptIds.length + index,
       });
     });
+
     if (video)
       mediaData.push({
         postId: post.id,
         type: "VIDEO",
-        url: `/uploads/videos/${video.filename}`,
+        url: video.url,
         order: 0,
       });
+
     if (mediaData.length > 0)
       await PostMedia.bulkCreate(mediaData, { transaction });
 

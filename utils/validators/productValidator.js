@@ -2,7 +2,7 @@ const { check, param } = require("express-validator");
 const validatorMiddleware = require("../../middlewares/validatorMiddleware");
 
 const ALLOWED_CATEGORIES = [
-  "vegetarian",
+  "Vegetarian",
   "Fast Food",
   "Deserts & Sweets",
   "Seafood",

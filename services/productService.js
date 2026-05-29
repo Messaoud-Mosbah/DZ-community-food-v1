@@ -41,7 +41,9 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
     if (!profile) return;
 
     const { name, description, price, category, preparingTime } = req.body;
-    const image = `/uploads/images/${req.files?.image?.[0].filename}`;
+    
+    // تعديل: استقبال رابط Cloudinary السحابي المباشر بدلاً من اسم الملف المحلي
+    const image = req.files?.image?.[0]?.url || null;
 
     const product = await Product.create({
         name, description, price, image, preparingTime,
@@ -66,7 +68,11 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
     if (price !== undefined) product.price = price;
     if (preparingTime !== undefined) product.preparingTime = preparingTime;
     if (category !== undefined) product.category = parseCategory(category);
-    if (req.files?.image?.[0]) product.image = `/uploads/images/${req.files.image[0].filename}`;
+    
+    // تعديل: تحديث الصورة باستخدام رابط Cloudinary السحابي في حال تم رفع صورة جديدة
+    if (req.files?.image?.[0]) {
+        product.image = req.files.image[0].url;
+    }
 
     await product.save();
     res.status(200).json({ status: "SUCCESS", data: { product }, errors: null });

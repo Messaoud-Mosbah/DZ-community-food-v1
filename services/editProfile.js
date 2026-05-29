@@ -1,4 +1,3 @@
-const upload = require("../middlewares/uploadMiddleware"); 
 const { GENERATE_TOKEN } = require("../utils/createToken");
 
 const asyncHandler = require("express-async-handler");
@@ -15,8 +14,9 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
   let profile = await UserProfile.findOne({ where: { userId } });
   if (!profile) profile = await UserProfile.create({ userId });
 
+  // ✅ Cloudinary يرجع url مباشرة
   if (req.files?.avatarImageFile?.[0]) {
-    profile.profilePicture = `/uploads/images/${req.files.avatarImageFile[0].filename}`;
+    profile.profilePicture = req.files.avatarImageFile[0].url;
   } else if (req.body.avatarImageFile === "") {
     profile.profilePicture = null;
   }
@@ -62,14 +62,13 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // الصورة
+  // ✅ Cloudinary يرجع url مباشرة
   if (req.files?.avatarImageFile?.[0]) {
-    profile.restaurantLogoUrl = `/uploads/images/${req.files.avatarImageFile[0].filename}`;
+    profile.restaurantLogoUrl = req.files.avatarImageFile[0].url;
   } else if (req.body.avatarImageFile === "") {
     profile.restaurantLogoUrl = null;
   }
 
-  // الحقول العادية
   const fields = {
     restaurantName: "profile-restaurantBasicInformation-restaurantName",
     businessEmail:  "profile-restaurantBasicInformation-businessEmail",
@@ -94,7 +93,6 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     }
   });
 
-  // services من الـ flat fields
   const serviceKeys = ["dineIn", "takeAway", "delivery", "reservation", "parkAvailability"];
   const newServices = {};
   let hasServices = false;
@@ -136,37 +134,35 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
 });
 
 exports.editAccount = asyncHandler(async (req, res, next) => {
-    const { userName, currentPassword, newPassword, newPasswordConfirm, email } = req.body;
+  const { userName, currentPassword, newPassword, newPasswordConfirm, email } = req.body;
 
-    if (newPassword && !currentPassword) return next(new ApiError("Current password required", 400));
-    if (newPassword && newPassword.length < 8) return next(new ApiError("New password must be at least 8 characters", 400));
-    if (newPassword && newPassword !== newPasswordConfirm) return next(new ApiError("Passwords do not match", 400));
+  if (newPassword && !currentPassword) return next(new ApiError("Current password required", 400));
+  if (newPassword && newPassword.length < 8) return next(new ApiError("New password must be at least 8 characters", 400));
+  if (newPassword && newPassword !== newPasswordConfirm) return next(new ApiError("Passwords do not match", 400));
 
-    const user = await User.findByPk(req.authenticatedUser.id);
-    if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
+  const user = await User.findByPk(req.authenticatedUser.id);
+  if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
-    if (userName !== undefined) user.userName = userName;
-    if (email !== undefined) user.email = email;
+  if (userName !== undefined) user.userName = userName;
+  if (email !== undefined) user.email = email;
 
-    if (currentPassword && newPassword) {
-        const correct = await bcrypt.compare(currentPassword, user.password);
-        if (!correct) return next(new ApiError("Current password is incorrect", 401));
-        user.password = newPassword;
-        user.passwordChangedAt = Date.now();
-    }
+  if (currentPassword && newPassword) {
+    const correct = await bcrypt.compare(currentPassword, user.password);
+    if (!correct) return next(new ApiError("Current password is incorrect", 401));
+    user.password = newPassword;
+    user.passwordChangedAt = Date.now();
+  }
 
-    await user.save();
+  await user.save();
 
-    const jwtToken = await GENERATE_TOKEN({ email: user.email, id: user.id, userName: user.userName });
-    const newUser = await User.findByPk(user.id, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
+  const jwtToken = await GENERATE_TOKEN({ email: user.email, id: user.id, userName: user.userName });
+  const newUser = await User.findByPk(user.id, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
 
-    res.status(200).json({ status: "SUCCESS", message: "Account updated successfully", data: { user: newUser, jwtToken }, errors: null });
+  res.status(200).json({ status: "SUCCESS", message: "Account updated successfully", data: { user: newUser, jwtToken }, errors: null });
 });
 
-// ── Delete Account ────────────────────────────────────────────────
-
 exports.deleteAccount = asyncHandler(async (req, res, next) => {
-    const deleted = await User.destroy({ where: { id: req.authenticatedUser.id } });
-    if (!deleted) return next(new ApiError("User not found", 404));
-    res.status(200).json({ status: "SUCCESS", message: "Account deleted successfully", data: null, errors: null });
+  const deleted = await User.destroy({ where: { id: req.authenticatedUser.id } });
+  if (!deleted) return next(new ApiError("User not found", 404));
+  res.status(200).json({ status: "SUCCESS", message: "Account deleted successfully", data: null, errors: null });
 });

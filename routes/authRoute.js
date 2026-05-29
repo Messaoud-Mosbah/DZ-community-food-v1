@@ -22,10 +22,10 @@ const {
   userProfileValidator,
   restaurantProfileValidator,
 } = require("../utils/validators/authValidators");
-const upload = require("../middlewares/uploadMiddleware");
+const cloudinaryUpload = require("../middlewares/uploadMiddleware");
 
 const auth = [protect, allwodTo("USER", "RESTAURANT", "ADMIN")];
-const uploadAvatar = upload.fields([{ name: "avatarImageFile", maxCount: 1 }]);
+const uploadAvatar = cloudinaryUpload.fields([{ name: "avatarImageFile", maxCount: 1 }]); // ✅
 
 // ── AUTH ──────────────────────────────────────────────────────────
 router.post("/sign-up",                   signupValidator,  signup);
