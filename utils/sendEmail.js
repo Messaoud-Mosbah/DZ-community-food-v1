@@ -1,25 +1,30 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-const sendEmail = async ({ email, subject, message, html }) => {
+const sendEmail = async ({ email, subject, message, html }) => { // أضفنا html هنا
   try {
-
-    const { data, error } = await resend.emails.send({
-      from: 'Feed Me <onboarding@resend.dev>', // تأكد أنها تنتهي بـ resend.dev وليس feedme.com
-      to: email,
-      subject: subject,
-      text: message,
-      html: html
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD
+      }
     });
 
-    if (error) throw error;
+    const info = await transporter.sendMail({
+      from: `"DZ Community Food" <${process.env.EMAIL_USERNAME}>`, 
+      to: email,
+      subject: subject,
+      text: message, // النسخة الاحتياطية (نص عادي)
+      html: html     // النسخة الأساسية (روابط قابلة للضغط وتنسيق)
+    });
 
-    console.log('Email sent successfully', data.id);
-    return data;
+    console.log('Email sent successfully', info.messageId);
+    return info; 
   } catch (error) {
     console.error('Error sending email:', error.message);
-    throw error;
+    throw error; 
   }
 };
 
