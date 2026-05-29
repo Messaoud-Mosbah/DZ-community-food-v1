@@ -26,7 +26,8 @@ module.exports = {
       connectTimeout: 60000,
       ssl: {
         minVersion: 'TLSv1.2',
-        rejectUnauthorized: true 
+        // تم التعديل إلى false للسماح بالاتصال السحابي المشفر دون فرض شهادة محلية
+        rejectUnauthorized: false 
       }
     }
   }
