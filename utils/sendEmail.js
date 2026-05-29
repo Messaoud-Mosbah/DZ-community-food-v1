@@ -5,32 +5,28 @@ const sendEmail = async ({ email, subject, message, html }) => {
     const port = Number(process.env.EMAIL_PORT) || 587;
 
     const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
+      // 🔥 الحل القاطع: تمرير الـ IP المباشر لـ Gmail IPv4 لمنع الـ DNS من التوجه لـ IPv6
+      host: "74.125.134.108", 
       port,
-      secure: port === 465, 
+      secure: false, // بما أننا نستخدم 587
       auth: {
         user: process.env.EMAIL_USERNAME,
         pass: process.env.EMAIL_PASSWORD,
       },
-      // تذكر حل مشكلة المهلة والشهادات الأمنية
-      connectionTimeout: 10000, 
-      greetingTimeout: 10000,
+      connectionTimeout: 15000, 
+      greetingTimeout: 15000,
       tls: {
+        // ضروري جداً هنا لأن اسم المضيف (Host) في الشهادة سيكون smtp.gmail.com وليس الـ IP
         rejectUnauthorized: false,
-      },
-      // 🔥 الطريقة الصحيحة لإجبار IPv4 في Nodemailer دون كسر الـ Socket
-      family: 4
+        servername: 'smtp.gmail.com' 
+      }
     });
 
-    console.log("إعدادات الاتصال الحالية:", {
-      host: process.env.EMAIL_HOST,
-      port: port,
-      secure: port === 465,
-    });
+    console.log("محاولة الاتصال بالـ IP المباشر لـ Gmail:");
 
     // اختبار الاتصال بالخادم
     await transporter.verify();
-    console.log("SMTP Connected Successfully via IPv4");
+    console.log("SMTP Connected Successfully via Direct IPv4!");
 
     const info = await transporter.sendMail({
       from: `"DZ Food Community" <${process.env.EMAIL_USERNAME}>`,
