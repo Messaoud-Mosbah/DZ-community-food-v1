@@ -4,7 +4,7 @@ const asyncHandler = require("express-async-handler");
 const { User, UserProfile, RestaurantProfile } = require("../models");
 const ApiError = require("../utils/apiError");
 const bcrypt = require("bcryptjs");
-const userAttributes = ["id", "userName", "email", "slug", "role", "followersCount", "followingCount", "isOnboardingCompleted", "createdAt"];
+const userAttributes = ["id", "userName", "email", "slug", "role", "followersCount", "followingCount", "isVerified","isOnboardingCompleted", "createdAt"];
 
 exports.editUserProfile = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
