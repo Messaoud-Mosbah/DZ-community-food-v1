@@ -1,39 +1,40 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 const sendEmail = async ({ email, subject, message, html }) => {
   try {
-    const isRender = process.env.NODE_ENV === 'production';
-
-    const port = isRender ? 465 : (Number(process.env.EMAIL_PORT) || 587);
-    const secure = isRender ? true : (port === 465);
+    const port = Number(process.env.EMAIL_PORT) || 587;
 
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: port, 
-      secure: secure, 
+      port,
+      secure: port === 465,
       auth: {
         user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD
+        pass: process.env.EMAIL_PASSWORD,
       },
-      // لضمان استقرار الاتصال على سيرفر Render وتفادي رفض شهادات الأمان
-      tls: {
-        rejectUnauthorized: false
-      }
     });
+    console.log({
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+});
+
+    // اختبار الاتصال
+    await transporter.verify();
+    console.log("SMTP Connected Successfully");
 
     const info = await transporter.sendMail({
-      from: `"DZ Community Food" <${process.env.EMAIL_USERNAME}>`, 
+      from: `"DZ Community Food" <${process.env.EMAIL_USERNAME}>`,
       to: email,
-      subject: subject,
-      text: message, 
-      html: html     
+      subject,
+      text: message,
+      html,
     });
 
-    console.log('Email sent successfully', info.messageId);
-    return info; 
+    console.log("Email sent successfully:", info.messageId);
+    return info;
   } catch (error) {
-    console.error('Error sending email:', error.message);
-    throw error; 
+    console.error("Error sending email:", error);
+    throw error;
   }
 };
 
