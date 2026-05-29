@@ -1,9 +1,8 @@
 const path = require("path");
 const dotenv = require("dotenv");
 
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config({ path: path.join(__dirname, "config.env") });
-}
+// قراءة متغيرات البيئة محلياً (إذا كان الملف موجوداً)
+dotenv.config({ path: path.join(__dirname, "config.env") });
 
 const express = require("express");
 const cors = require("cors");
@@ -58,6 +57,32 @@ if (process.env.NODE_ENV === "development") {
   console.log(`mode: ${process.env.NODE_ENV}`);
 }
 
+// ── Database Connection Middleware (لضمان الاتصال في الـ Serverless) ──
+let isConnected = false;
+
+const connectDB = async (req, res, next) => {
+  if (isConnected) {
+    return next();
+  }
+  try {
+    await sequelize.authenticate();
+    console.log("✅ Database connection established successfully.");
+    
+    // في بيئة Serverless يفضل عمل sync فقط في التطوير، ولكن هذا السطر آمن إذا كانت الجداول منشأة بالفعل
+    await sequelize.sync();
+    console.log("✅ Database synced successfully.");
+    
+    isConnected = true;
+    next();
+  } catch (err) {
+    console.error("❌ Unable to connect to the database:", err);
+    return res.status(500).json({ status: "ERROR", message: "Database connection failed" });
+  }
+};
+
+// تفعيل ميكانيكية الاتصال عند كل طلب قادم للـ API
+app.use(connectDB);
+
 // ── Static Files ──────────────────────────────────────
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -85,38 +110,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ status: "ERROR", message: "Something went very wrong!" });
 });
 
-// ── Database Connection (مع cache لتفادي إعادة الاتصال في كل request) ──
-let isConnected = false;
-
-const connectDB = async () => {
-  if (isConnected) return;
-  try {
-    await sequelize.authenticate();
-    console.log("✅ Database connection established successfully.");
-    await sequelize.sync();
-    console.log("✅ Database synced successfully.");
-    isConnected = true;
-  } catch (err) {
-    console.error("❌ Unable to connect to the database:", err);
-    process.exit(1);
-  }
-};
-
-// ── Start Server ──────────────────────────────────────
-// جعل المنفذ مرن ليستقبل منفذ Render في الـ Production أو 8000 في الـ Development
-const PORT = process.env.PORT || 8000;
-
-connectDB().then(() => {
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server started successfully on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+// ── تشغيل السيرفر محلياً فقط (Local Development) ──
+// Vercel سيتجاهل هذا الجزء تماماً ويستخدم الـ export في الأسفل
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 8000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Local Server started on port ${PORT}`);
   });
-}).catch((err) => {
-  console.error("❌ Failed to start server due to DB connection error:", err);
-});
+}
 
 process.on("unhandledRejection", (err) => {
   console.error(`UnhandledRejection Errors: ${err.name} | ${err.message}`);
   process.exit(1);
 });
 
+// التصدير الأساسي الذي يعتمد عليه Vercel تشغيلياً
 module.exports = app;
