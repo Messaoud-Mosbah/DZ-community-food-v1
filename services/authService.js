@@ -34,7 +34,7 @@ const sendVerificationEmail = async (user) => {
   user.verificationTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
   await user.save({ fields: ["verificationTokenHash", "verificationTokenExpires"] });
 
-  const verificationURL = `http://localhost:3000/verify-email?token=${originalToken}`;
+  const verificationURL = `https://feedme-algeria.vercel.app/verify-email?token=${originalToken}`;
   const htmlContent = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
         <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
@@ -173,7 +173,7 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
   userRecord.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
   await userRecord.save({ fields: ["passwordResetTokenHash", "passwordResetExpires"] });
 
-  const resetURL = `http://localhost:3000/reset-password?token=${resetToken}`;
+  const resetURL = `https://feedme-algeria.vercel.app//reset-password?token=${resetToken}`;
   const htmlContent = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
             <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
