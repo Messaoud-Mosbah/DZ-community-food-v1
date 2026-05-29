@@ -291,7 +291,7 @@ const updatePost = asyncHandler(async (req, res, next) => {
     const updatedPost = await Post.findByPk(id, {
       include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
     });
-    res.status(200).json({ status: "SUCCESS",message:"Post updated successfuly", data: { post: updatedPost } });
+    res.status(200).json({ status: "SUCCESS",message:"Post update successfuly", data: { post: updatedPost } });
   } catch (error) {
     await transaction.rollback();
     next(error);
