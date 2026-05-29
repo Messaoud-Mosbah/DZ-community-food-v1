@@ -1,14 +1,23 @@
 const nodemailer = require('nodemailer');
 
-const sendEmail = async ({ email, subject, message, html }) => { // أضفنا html هنا
+const sendEmail = async ({ email, subject, message, html }) => {
   try {
+    const isRender = process.env.NODE_ENV === 'production';
+
+    const port = isRender ? 465 : (Number(process.env.EMAIL_PORT) || 587);
+    const secure = isRender ? true : (port === 465);
+
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
-      secure: false, // true for 465, false for other ports
+      port: port, 
+      secure: secure, 
       auth: {
         user: process.env.EMAIL_USERNAME,
         pass: process.env.EMAIL_PASSWORD
+      },
+      // لضمان استقرار الاتصال على سيرفر Render وتفادي رفض شهادات الأمان
+      tls: {
+        rejectUnauthorized: false
       }
     });
 
@@ -16,8 +25,8 @@ const sendEmail = async ({ email, subject, message, html }) => { // أضفنا h
       from: `"DZ Community Food" <${process.env.EMAIL_USERNAME}>`, 
       to: email,
       subject: subject,
-      text: message, // النسخة الاحتياطية (نص عادي)
-      html: html     // النسخة الأساسية (روابط قابلة للضغط وتنسيق)
+      text: message, 
+      html: html     
     });
 
     console.log('Email sent successfully', info.messageId);
