@@ -22,6 +22,16 @@ module.exports = {
         allowNull: false,
         defaultValue: false,
       },
+      isSolved: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      isClosed: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       likeCount: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -52,7 +62,6 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('questions', ['userId']);
     await queryInterface.addIndex('questions', ['isPinned']);
   },
 
