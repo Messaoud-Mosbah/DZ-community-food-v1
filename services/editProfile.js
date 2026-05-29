@@ -5,7 +5,6 @@ const asyncHandler = require("express-async-handler");
 const { User, UserProfile, RestaurantProfile } = require("../models");
 const ApiError = require("../utils/apiError");
 const bcrypt = require("bcryptjs");
-const { GENERATE_TOKEN } = require("../utils/createToken");
 const userAttributes = ["id", "userName", "email", "slug", "role", "followersCount", "followingCount", "isOnboardingCompleted", "createdAt"];
 
 exports.editUserProfile = asyncHandler(async (req, res, next) => {
