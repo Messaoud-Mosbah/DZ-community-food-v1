@@ -18,10 +18,8 @@ const sendEmail = async ({ email, subject, message, html }) => {
       tls: {
         rejectUnauthorized: false,
       },
-      // 🔥 الحل السحري لخطأ ENETUNREACH: إجبار الاتصال على IPv4 فقط
-      connection: {
-        family: 4
-      }
+      // 🔥 الطريقة الصحيحة لإجبار IPv4 في Nodemailer دون كسر الـ Socket
+      family: 4
     });
 
     console.log("إعدادات الاتصال الحالية:", {
