@@ -84,6 +84,7 @@ app.use((err, req, res, next) => {
   console.error("ERROR DETAILS:", err);
   res.status(500).json({ status: "ERROR", message: "Something went very wrong!" });
 });
+
 // ── Database Connection (مع cache لتفادي إعادة الاتصال في كل request) ──
 let isConnected = false;
 
@@ -102,16 +103,16 @@ const connectDB = async () => {
 };
 
 // ── Start Server ──────────────────────────────────────
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 8000;
-  connectDB().then(() => {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server started at port ${PORT}`);
-    });
+// جعل المنفذ مرن ليستقبل منفذ Render في الـ Production أو 8000 في الـ Development
+const PORT = process.env.PORT || 8000;
+
+connectDB().then(() => {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server started successfully on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
   });
-} else {
-  connectDB();
-}
+}).catch((err) => {
+  console.error("❌ Failed to start server due to DB connection error:", err);
+});
 
 process.on("unhandledRejection", (err) => {
   console.error(`UnhandledRejection Errors: ${err.name} | ${err.message}`);
