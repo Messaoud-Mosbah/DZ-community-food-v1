@@ -14,7 +14,6 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
   let profile = await UserProfile.findOne({ where: { userId } });
   if (!profile) profile = await UserProfile.create({ userId });
 
-  // ✅ Cloudinary يرجع url مباشرة
   if (req.files?.avatarImageFile?.[0]) {
     profile.profilePicture = req.files.avatarImageFile[0].url;
   } else if (req.body.avatarImageFile === "") {

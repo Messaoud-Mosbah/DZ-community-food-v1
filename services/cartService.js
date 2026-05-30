@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const ApiError = require("../utils/apiError");
 const { CartItem, Product, User, RestaurantProfile } = require("../models");
 
-const SERVER_BASE_URL = "http://localhost:8000";
+const SERVER_BASE_URL= process.env.SERVER_BASE;
 
 const formatImageUrl = (path) => {
     if (!path) return null;

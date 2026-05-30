@@ -113,10 +113,10 @@ const resend_verification_email = asyncHandler(async (req, res, next) => {
     where: { [Op.or]: [{ email: identifier }, { userName: identifier }] },
   });
   if (!user) return next(new ApiError("This email is not registered with us", 404));
-  if (user.isVerified) return res.status(400).json({ STATUS: "FAIL", MESSAGE: "This account is already verified" });
+  if (user.isVerified) return res.status(400).json({ status: "FAIL", message: "This account is already verified" });
 
   await sendVerificationEmail(user);
-  res.status(200).json({ STATUS: "success", MESSAGE: "Verification email sent successfully", DATA: null, ERRORS: null });
+  res.status(200).json({ status: "success", message: "Verification email sent successfully", data: null, errors: null });
 });
 
 //---------4-------

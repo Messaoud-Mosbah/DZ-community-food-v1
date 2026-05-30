@@ -12,7 +12,7 @@ const validatorMiddleware = (req, res, next) => {
       status: 'FAIL',
       message: 'Validation Error', 
       data: null,
-      errors:[extractedErrors], 
+      errors:[...extractedErrors], 
     });
   }
   next();
