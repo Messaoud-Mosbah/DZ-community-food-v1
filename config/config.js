@@ -19,15 +19,17 @@ module.exports = {
     }
   },
   production: {
-    // يخبر Sequelize بقراءة الرابط الكامل والمدمج من Render مباشرة
-    use_env_variable: 'DATABASE_URL', 
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 3306,
     dialect: "mysql",
     dialectOptions: {
       connectTimeout: 60000,
       ssl: {
         minVersion: 'TLSv1.2',
-        // تم التعديل إلى false للسماح بالاتصال السحابي المشفر دون فرض شهادة محلية
-        rejectUnauthorized: false 
+        rejectUnauthorized: false
       }
     }
   }
