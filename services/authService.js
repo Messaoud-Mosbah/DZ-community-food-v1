@@ -240,8 +240,8 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   userRecord.password = password;
   userRecord.passwordResetTokenHash = null;
   userRecord.passwordResetExpires = null;
-  if(!user.isVerified){
-    user.isVerified=true;
+  if(!userRecord.isVerified){
+    userRecord.isVerified=true;
   }
   await userRecord.save();
 
