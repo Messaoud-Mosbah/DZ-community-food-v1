@@ -13,7 +13,6 @@ router.get("/my/answered", ...auth, q.getMyAnsweredQuestions);
 router.get("/saved",       ...auth, q.getMySavedQuestions); 
 
 router.post("/save/:questionId",   ...auth, q.saveQuestion);
-router.delete("/save/:questionId", ...auth, q.unsaveQuestion);
 router.post("/:questionId/toggle-like", ...auth, q.toggleQuestionLike);
 
 

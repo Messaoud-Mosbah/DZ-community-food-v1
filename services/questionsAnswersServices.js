@@ -92,12 +92,10 @@ const getAllQuestions = asyncHandler(async (req, res) => {
     let whereClause = {};
     if (cursor) {
         const [cursorPinned, cursorDate] = cursor.split('_');
-        const isPinned = cursorPinned === 'true';
         const lastDate = new Date(cursorDate);
         whereClause = {
             [Op.or]: [
-                { isPinned, createdAt: { [Op.lt]: lastDate } },
-                { isPinned: { [Op.lt]: isPinned } }
+                {  createdAt: { [Op.lt]: lastDate } },
             ]
         };
     }
@@ -105,7 +103,7 @@ const getAllQuestions = asyncHandler(async (req, res) => {
     const questions = await Question.findAll({
         where: whereClause,
         limit,
-        order: [["isPinned", "DESC"], ["createdAt", "DESC"]],
+        order: [ ["createdAt", "DESC"]],
         include: [allAuthorsInclude],
     });
 
@@ -260,22 +258,24 @@ const saveQuestion = asyncHandler(async (req, res, next) => {
     if (!question) return next(new ApiError('Question not found', 404));
 
     const alreadySaved = await SavedQuestion.findOne({ where: { userId, questionId } });
-    if (alreadySaved) return next(new ApiError('Question already saved', 400));
+
+    if (alreadySaved) {
+        await alreadySaved.destroy();
+        return res.status(200).json({
+            status: 'SUCCESS',
+            message: 'Question removed from saved questions',
+            isSaved: false,  
+        });
+    }
 
     await SavedQuestion.create({ userId, questionId });
-    res.status(201).json({ status: 'SUCCESS', message: 'Question saved to saved questions' });
+    return res.status(201).json({
+        status: 'SUCCESS',
+        message: 'Question saved to saved questions',
+        isSaved: true,  
+    });
 });
 
-const unsaveQuestion = asyncHandler(async (req, res, next) => {
-    const { questionId } = req.params;
-    const userId = req.authenticatedUser.id;
-
-    const savedItem = await SavedQuestion.findOne({ where: { userId, questionId } });
-    if (!savedItem) return next(new ApiError('Question not found in saved list', 404));
-
-    await savedItem.destroy();
-    res.status(200).json({ status: 'SUCCESS', message: 'Question removed from saved questions' });
-});
 
 const getMySavedQuestions = asyncHandler(async (req, res) => {
     const currentUserId = req.authenticatedUser.id;
@@ -346,5 +346,5 @@ module.exports = {
     updateQuestion, deleteQuestion, togglePin,
     createQuestionComment, getQuestionComments, deleteQuestionComment, 
     toggleQuestionLike,closeQuestion,markAsSolved,getMyAnsweredQuestions,
-    saveQuestion, unsaveQuestion, getMySavedQuestions
+    saveQuestion, getMySavedQuestions
 };
