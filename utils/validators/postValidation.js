@@ -12,11 +12,11 @@ const validateCreatePost = asyncHandler(async (req, res, next) => {
   }
 
   const schema = Joi.object({
-    title: Joi.string().max(255).required(),
-    description: Joi.string().required(),
+    title: Joi.string().min(3).max(100).required(),
+    description: Joi.string().min(50).max(5000).required(),
     contentType: Joi.string().valid('RECIPE', 'DISH').optional(),
     mediaType: Joi.string().valid('IMAGE', 'VIDEO', 'NONE'),
-    keptMediaIds: Joi.any().optional() // ✅ زيد هذا
+    keptMediaIds: Joi.any().optional() 
   })
 
   const { error } = schema.validate(req.body)

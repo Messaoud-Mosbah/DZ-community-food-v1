@@ -289,7 +289,7 @@ const getMySavedQuestions = asyncHandler(async (req, res) => {
     const questions = savedQuestions.map(s => s.Question);
     const questionsWithMeta = await attachMetaToQuestions(questions, currentUserId);
 
-    res.status(200).json({ status: 'SUCCESS', results: savedQuestions.length, data: { savedQuestions: questionsWithMeta } });
+    res.status(200).json({ status: 'SUCCESS', results: savedQuestions.length, data: { questions: questionsWithMeta } });
 });
 ///////
 const markAsSolved = asyncHandler(async (req, res, next) => {

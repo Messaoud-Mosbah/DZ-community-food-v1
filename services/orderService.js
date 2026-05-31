@@ -83,10 +83,9 @@ exports.getAcceptedOrders = asyncHandler(async (req, res, next) => {
     const profile = await getRestaurantProfile(req.authenticatedUser.id, next);
     if (!profile) return;
 
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
     const orders = await Order.findAll({
-        where: { restaurantProfileId: profile.id, status: "ACCEPTED", updatedAt: { [Op.gte]: oneHourAgo } },
+        where: { restaurantProfileId: profile.id, status: "ACCEPTED" },
         include: orderInclude,
         order: [["updatedAt", "DESC"]]
     });
