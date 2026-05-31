@@ -66,12 +66,13 @@ app.use("/api/users", userRouter);
 app.use("/api/authentication", authRouter);
 app.use("/api/profile", editProfileRouter);
 app.use("/api/profile", viewProfileRouter);
+app.use("/api/questions", questionRoutes);
+
 app.use("/api/posts", postRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/store", storeRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/questions", questionRoutes);
 
 // ── 404 Handler ───────────────────────────────────────
 app.all("*", (req, res, next) => {

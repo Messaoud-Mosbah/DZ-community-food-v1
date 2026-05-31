@@ -18,7 +18,9 @@ router.post("/:questionId/toggle-like", ...auth, q.toggleQuestionLike);
 
 
 router.get("/:questionId/comments",   ...auth, q.getQuestionComments);
+//1
 router.post("/:questionId/comments",  ...auth, q.createQuestionComment);
+
 router.delete("/comments/:id",        ...auth, q.deleteQuestionComment);
 
 router.patch("/pin/:id",     ...auth, q.togglePin); 
