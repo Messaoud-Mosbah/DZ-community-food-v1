@@ -18,7 +18,22 @@ exports.getAllProducts = asyncHandler(async (req, res, next) => {
 
     const products = await Product.findAll({
         where: { restaurantProfileId: profile.id },
-        order: [["createdAt", "DESC"]]
+        order: [["createdAt", "DESC"]],
+        attributes: ["id", "name", "price", "description", "image", "preparationTime", "category"],
+        include: [
+            {
+                model: RestaurantProfile,
+                as: "restaurant",
+                attributes: ["id", "restaurantName", "restaurantLogoUrl"],
+                include: [
+                    {
+                        model: User,
+                        as: "User",
+                        attributes: ["userName"],
+                    }
+                ]
+            }
+        ]
     });
 
     res.status(200).json({ status: "SUCCESS", data: { results: products.length, products }, errors: null });
@@ -42,7 +57,6 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
 
     const { name, description, price, category, preparingTime } = req.body;
     
-    // تعديل: استقبال رابط Cloudinary السحابي المباشر بدلاً من اسم الملف المحلي
     const image = req.files?.image?.[0]?.url || null;
 
     const product = await Product.create({
