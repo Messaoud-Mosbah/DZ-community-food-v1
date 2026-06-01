@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../utils/apiError");
-const { Product, RestaurantProfile } = require("../models");
+const { Product,User, RestaurantProfile } = require("../models");
 
 const getRestaurantProfile = async (userId, next) => {
     const profile = await RestaurantProfile.findOne({ where: { userId } });
