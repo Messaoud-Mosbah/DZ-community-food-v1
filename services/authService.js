@@ -292,7 +292,7 @@ const userProfile = asyncHandler(async (req, res, next) => {
   if (!userRole)
     return next(new ApiError("Please specify your account type (USER or RESTAURANT).", 400));
 
-  const {Profile} = parseFormDataToProfile(req.body);
+  const {profile} = parseFormDataToProfile(req.body);
   const { userBasicInformation, userUsagePreferences } = profile ?? {};
 
   const userRecord = await validateOnboardingEligibility(userId, next);
