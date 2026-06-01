@@ -19,7 +19,7 @@ exports.getAllProducts = asyncHandler(async (req, res, next) => {
     const products = await Product.findAll({
         where: { restaurantProfileId: profile.id },
         order: [["createdAt", "DESC"]],
-        attributes: ["id", "name", "price", "description", "image", "preparationTime", "category"],
+        attributes: ["id", "name", "price", "description", "image", "preparingTime", "category"],
         include: [
             {
                 model: RestaurantProfile,
