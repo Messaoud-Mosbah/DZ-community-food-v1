@@ -16,9 +16,9 @@ router.post("/save/:questionId",   ...auth, q.saveQuestion);
 router.post("/:questionId/toggle-like", ...auth, q.toggleQuestionLike);
 
 
-router.get("/:questionId/comments",   ...auth, q.getQuestionComments);
+router.get("/:questionId/answers",   ...auth, q.getQuestionComments);
 //1
-router.post("/:questionId/comments",  ...auth, q.createQuestionComment);
+router.post("/:questionId/answers",  ...auth, q.createQuestionComment);
 
 router.delete("/comments/:id",        ...auth, q.deleteQuestionComment);
 
