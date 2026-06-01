@@ -42,7 +42,7 @@ isClosed: {
   type: DataTypes.BOOLEAN,
   defaultValue: false,
 },
-    isPinned: { // أضفته بناءً على استخدامك له في الـ Controller
+    isPinned: { 
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },

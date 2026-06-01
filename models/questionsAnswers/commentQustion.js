@@ -21,11 +21,11 @@ const CommentQuestion = sequelize.define("CommentQuestion", {
     },
     afterDestroy: async (comment, options) => {
       if (sequelize.models.Question) {
-        await sequelize.models.Question.decrement('commentCount', {
+        await sequelize.models.Question.decrement('answerCount', {
           by: 1,
           where: {
             id: comment.questionId,
-            commentCount: { [Op.gt]: 0 } // ✅ حماية من السالب
+            answerCount: { [Op.gt]: 0 } 
           },
           transaction: options.transaction
         });

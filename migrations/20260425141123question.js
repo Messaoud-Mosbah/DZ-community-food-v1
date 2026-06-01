@@ -37,7 +37,7 @@ module.exports = {
         allowNull: false,
         defaultValue: 0,
       },
-      commentCount: {
+      answerCount: {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 0,
