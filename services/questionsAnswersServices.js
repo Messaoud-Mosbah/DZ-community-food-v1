@@ -173,7 +173,7 @@ const createQuestionComment = asyncHandler(async (req, res, next) => {
 
     const comment = await CommentQuestion.create({ text, questionId, userId: req.authenticatedUser.id });
 
-    res.status(201).json({ status: 'SUCCESS', message: 'Comment added', data: { comment } });
+    res.status(201).json({ status: 'SUCCESS', message: 'answer added', data: { answer:comment } });
 });
 
 const getQuestionComments = asyncHandler(async (req, res) => {
@@ -182,7 +182,7 @@ const getQuestionComments = asyncHandler(async (req, res) => {
         order: [['createdAt', 'DESC']],
         include: [{
             model: User,
-            as: "user",  // 👈 إضافة
+            as: "user",  
             attributes: ['id', 'userName', 'role'],
             include: [
                 { model: UserProfile, required: false, attributes: ['fullName', 'profilePicture'] },
@@ -191,21 +191,21 @@ const getQuestionComments = asyncHandler(async (req, res) => {
         }]
     });
 
-    res.status(200).json({ status: 'SUCCESS', data: { results: comments.length, comments } });
+    res.status(200).json({ status: 'SUCCESS', data: { results: comments.length, answers:comments } });
 });
 
 const deleteQuestionComment = asyncHandler(async (req, res, next) => {
     const comment = await CommentQuestion.findByPk(req.params.id);
-    if (!comment) return next(new ApiError('Comment not found', 404));
+    if (!comment) return next(new ApiError('answer not found', 404));
 
     const question = await Question.findByPk(comment.questionId);
     const { id: authId } = req.authenticatedUser;
 
     if (comment.userId !== authId && question.userId !== authId) {
-        return next(new ApiError('Not authorized to delete this comment', 403));
+        return next(new ApiError('Not authorized to delete this answer', 403));
     }
  await comment.destroy();
-    res.status(200).json({ status: 'SUCCESS', message: 'Comment deleted' });
+    res.status(200).json({ status: 'SUCCESS', message: 'answer deleted' });
 });
    
 
