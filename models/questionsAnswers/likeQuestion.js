@@ -1,18 +1,19 @@
-const { DataTypes } = require("sequelize");
-const {sequelize} = require('../../config/database'); // أضف ../ إضافية للرجوع مستويين
+const { DataTypes, Op } = require("sequelize");
+const { sequelize } = require('../../config/database');
+
 const LikeQuestion = sequelize.define("LikeQuestion", {
-  id: { 
-    type: DataTypes.UUID, 
-    defaultValue: DataTypes.UUIDV4, 
-    primaryKey: true 
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  userId: { 
-    type: DataTypes.UUID, 
-    allowNull: false 
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: false
   },
-  questionId: { 
-    type: DataTypes.UUID, 
-    allowNull: false 
+  questionId: {
+    type: DataTypes.UUID,
+    allowNull: false
   },
 }, {
   tableName: "Like_questions",
@@ -20,22 +21,27 @@ const LikeQuestion = sequelize.define("LikeQuestion", {
   indexes: [
     {
       unique: true,
-      fields: ['userId', 'questionId'] 
+      fields: ['userId', 'questionId']
     }
   ],
   hooks: {
     afterCreate: async (like, options) => {
       if (sequelize.models.Question) {
-        await sequelize.models.Question.increment('likeCount', { 
+        await sequelize.models.Question.increment('likeCount', {
+          by: 1,
           where: { id: like.questionId },
-          transaction: options.transaction 
+          transaction: options.transaction
         });
       }
     },
     afterDestroy: async (like, options) => {
       if (sequelize.models.Question) {
-        await sequelize.models.Question.decrement('likeCount', { 
-          where: { id: like.questionId },
+        await sequelize.models.Question.decrement('likeCount', {
+          by: 1,
+          where: {
+            id: like.questionId,
+            likeCount: { [Op.gt]: 0 } // ✅ حماية من السالب
+          },
           transaction: options.transaction
         });
       }
@@ -43,4 +49,4 @@ const LikeQuestion = sequelize.define("LikeQuestion", {
   }
 });
 
-module.exports = LikeQuestion; 
+module.exports = LikeQuestion;

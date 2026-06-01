@@ -1,4 +1,4 @@
-const { DataTypes } = require("sequelize");
+const { DataTypes, Op } = require("sequelize");
 const { sequelize } = require('../../config/database');
 
 const CommentQuestion = sequelize.define("CommentQuestion", {
@@ -11,12 +11,25 @@ const CommentQuestion = sequelize.define("CommentQuestion", {
   timestamps: true,
   hooks: {
     afterCreate: async (comment, options) => {
-      const Question = require("./questionModel");
-      await Question.increment('commentCount', { where: { id: comment.questionId }, transaction: options.transaction });
+      if (sequelize.models.Question) {
+        await sequelize.models.Question.increment('commentCount', {
+          by: 1,
+          where: { id: comment.questionId },
+          transaction: options.transaction
+        });
+      }
     },
     afterDestroy: async (comment, options) => {
-      const Question = require("./questionModel");
-      await Question.decrement('commentCount', { where: { id: comment.questionId }, transaction: options.transaction });
+      if (sequelize.models.Question) {
+        await sequelize.models.Question.decrement('commentCount', {
+          by: 1,
+          where: {
+            id: comment.questionId,
+            commentCount: { [Op.gt]: 0 } // ✅ حماية من السالب
+          },
+          transaction: options.transaction
+        });
+      }
     }
   }
 });

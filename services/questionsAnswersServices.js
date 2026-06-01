@@ -221,11 +221,10 @@ const deleteQuestionComment = asyncHandler(async (req, res, next) => {
     if (comment.userId !== authId && question.userId !== authId) {
         return next(new ApiError('Not authorized to delete this comment', 403));
     }
-
-    await comment.destroy();
+ await comment.destroy();
     res.status(200).json({ status: 'SUCCESS', message: 'Comment deleted' });
 });
-
+   
 
 
 // ── 3. LIKES SECTION ──────────────────────────────────────────────
