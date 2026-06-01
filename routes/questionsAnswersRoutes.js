@@ -20,7 +20,7 @@ router.get("/:questionId/answers",   ...auth, q.getQuestionComments);
 //1
 router.post("/:questionId/answers",  ...auth, q.createQuestionComment);
 
-router.delete("/comments/:id",        ...auth, q.deleteQuestionComment);
+router.delete("/answers/:id",        ...auth, q.deleteQuestionComment);
 
 router.patch("/pin/:id",     ...auth, q.togglePin); 
 router.get("/:id",         ...auth, q.getOneQuestion); 
