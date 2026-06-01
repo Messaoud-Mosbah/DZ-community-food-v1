@@ -1,135 +1,150 @@
 const { GENERATE_TOKEN } = require("../utils/createToken");
-
 const asyncHandler = require("express-async-handler");
 const { User, UserProfile, RestaurantProfile } = require("../models");
 const ApiError = require("../utils/apiError");
 const bcrypt = require("bcryptjs");
-const userAttributes = ["id", "userName", "email", "slug", "role", "followersCount", "followingCount", "isVerified","isOnboardingCompleted", "createdAt"];
+const { parseFormDataToProfile } = require("../utils/parse");
+
+const userAttributes = ["id", "userName", "email", "slug", "role", "followersCount", "followingCount", "isVerified", "isOnboardingCompleted", "createdAt"];
 
 exports.editUserProfile = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
-  const user = await User.findByPk(userId);
+  const user   = await User.findByPk(userId);
   if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
-  let profile = await UserProfile.findOne({ where: { userId } });
-  if (!profile) profile = await UserProfile.create({ userId });
+  let dbProfile = await UserProfile.findOne({ where: { userId } });
+  if (!dbProfile) dbProfile = await UserProfile.create({ userId });
 
+  const { profile } = parseFormDataToProfile(req.body);
+
+  // ── Profile Picture ──────────────────────────────────────────
   if (req.files?.avatarImageFile?.[0]) {
-    profile.profilePicture = req.files.avatarImageFile[0].url;
+    dbProfile.profilePicture = req.files.avatarImageFile[0].url;
   } else if (req.body.avatarImageFile === "") {
-    profile.profilePicture = null;
+    dbProfile.profilePicture = null;
   }
 
-  const fields = {
-    fullName:        "profile-userBasicInformation-fullName",
-    city:            "profile-userBasicInformation-city",
-    phoneNumber:     "profile-userBasicInformation-phoneNumber",
-    bio:             "profile-userBasicInformation-bio",
-    usageGoal:       "profile-userUsagePreferences-usageGoal",
-    kitchenCategory: "profile-userUsagePreferences-kitchenCategory",
-  };
-
-  Object.entries(fields).forEach(([profileField, bodyKey]) => {
-    if (req.body[bodyKey] !== undefined) {
-      const value = req.body[bodyKey];
-      if (profileField === "usageGoal" || profileField === "kitchenCategory") {
-        profile[profileField] = Array.isArray(value) ? value : [value];
-      } else {
-        profile[profileField] = value;
-      }
+  const basic = profile?.userBasicInformation;
+  if (basic) {
+    if (basic.fullName    !== undefined) dbProfile.fullName    = basic.fullName;
+    if (basic.city        !== undefined) dbProfile.city        = basic.city;
+    if (basic.phoneNumber !== undefined) dbProfile.phoneNumber = basic.phoneNumber;
+    if (basic.bio         !== undefined) dbProfile.bio         = basic.bio;
+  }
+  const prefs = profile?.userUsagePreferences;
+  if (prefs) {
+    if (prefs.usageGoal !== undefined) {
+      dbProfile.usageGoal = Array.isArray(prefs.usageGoal) ? prefs.usageGoal : [prefs.usageGoal];
+      dbProfile.changed("usageGoal", true);
     }
+    if (prefs.kitchenCategory !== undefined) {
+      dbProfile.kitchenCategory = Array.isArray(prefs.kitchenCategory) ? prefs.kitchenCategory : [prefs.kitchenCategory];
+      dbProfile.changed("kitchenCategory", true);
+    }
+  }
+
+  await dbProfile.save();
+
+  const newUser = await User.findByPk(userId, {
+    attributes: userAttributes,
+    include: [UserProfile, RestaurantProfile],
   });
 
-  await profile.save();
-
-  const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
-  res.status(200).json({ status: "SUCCESS", message: "User profile updated successfully", data: { user: newUser }, errors: null });
+  res.status(200).json({
+    status:  "SUCCESS",
+    message: "User profile updated successfully",
+    data:    { user: newUser },
+    errors:  null,
+  });
 });
 
 exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
-  const user = await User.findByPk(userId);
+  const user   = await User.findByPk(userId);
   if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
-  let profile = await RestaurantProfile.findOne({ where: { userId } });
-  if (!profile) {
-    profile = await RestaurantProfile.create({
+  let dbProfile = await RestaurantProfile.findOne({ where: { userId } });
+  if (!dbProfile) {
+    dbProfile = await RestaurantProfile.create({
       userId,
-      services: { dineIn: "NO", takeAway: "NO", delivery: "NO", reservation: "NO", parkAvailability: "NO" },
-      workingDays: [],
+      services:        { dineIn: "NO", takeAway: "NO", delivery: "NO", reservation: "NO", parkAvailability: "NO" },
+      workingDays:     [],
       kitchenCategory: [],
     });
   }
 
-  // ✅ Cloudinary يرجع url مباشرة
+  const { profile } = parseFormDataToProfile(req.body);
+
+  // ── Logo ─────────────────────────────────────────────────────────────
   if (req.files?.avatarImageFile?.[0]) {
-    profile.restaurantLogoUrl = req.files.avatarImageFile[0].url;
+    dbProfile.restaurantLogoUrl = req.files.avatarImageFile[0].url;
   } else if (req.body.avatarImageFile === "") {
-    profile.restaurantLogoUrl = null;
+    dbProfile.restaurantLogoUrl = null;
   }
 
-  const fields = {
-    restaurantName: "profile-restaurantBasicInformation-restaurantName",
-    businessEmail:  "profile-restaurantBasicInformation-businessEmail",
-    phoneNumber:    "profile-restaurantBasicInformation-phoneNumber",
-    bio:            "profile-restaurantBasicInformation-bio",
-    city:           "profile-restaurantLocationAndContact-city",
-    street:         "profile-restaurantLocationAndContact-street",
-    postalCode:     "profile-restaurantLocationAndContact-postalCode",
-    googleMapsLink: "profile-restaurantLocationAndContact-googleMapsLink",
-    kitchenCategory:"profile-restaurantDetails-kitchenCategory",
-  };
+  const basic = profile?.restaurantBasicInformation;
+  if (basic) {
+    if (basic.restaurantName !== undefined) dbProfile.restaurantName = basic.restaurantName;
+    if (basic.businessEmail  !== undefined) dbProfile.businessEmail  = basic.businessEmail;
+    if (basic.phoneNumber    !== undefined) dbProfile.phoneNumber    = basic.phoneNumber;
+  }
 
-  Object.entries(fields).forEach(([profileField, bodyKey]) => {
-    if (req.body[bodyKey] !== undefined) {
-      const value = req.body[bodyKey];
-      if (profileField === "kitchenCategory") {
-        profile[profileField] = Array.isArray(value) ? value : [value];
-        profile.changed("kitchenCategory", true);
-      } else {
-        profile[profileField] = value;
-      }
+  const details = profile?.restaurantDetails;
+  if (details) {
+    if (details.bio !== undefined) dbProfile.bio = details.bio;
+
+    // ── kitchenCategory ────────────────────────────────────────────────
+    if (details.kitchenCategory !== undefined) {
+      dbProfile.kitchenCategory = Array.isArray(details.kitchenCategory)
+        ? details.kitchenCategory
+        : [details.kitchenCategory];
+      dbProfile.changed("kitchenCategory", true);
     }
+
+    // ── Working Days ───────────────────────────────────────────────────
+    if (details.workingDays !== undefined) {
+      const wd = details.workingDays;
+      const days  = Array.isArray(wd.day)  ? wd.day  : wd.day  ? [wd.day]  : [];
+      const froms = Array.isArray(wd.from) ? wd.from : wd.from ? [wd.from] : [];
+      const tos   = Array.isArray(wd.to)   ? wd.to   : wd.to   ? [wd.to]   : [];
+
+      dbProfile.workingDays = days.map((day, i) => ({
+        day,
+        from: froms[i] || "",
+        to:   tos[i]   || "",
+      }));
+      dbProfile.changed("workingDays", true);
+    }
+  }
+
+  const location = profile?.restaurantLocationAndContact;
+  if (location) {
+    if (location.city           !== undefined) dbProfile.city           = location.city;
+    if (location.street         !== undefined) dbProfile.street         = location.street;
+    if (location.postalCode     !== undefined) dbProfile.postalCode     = location.postalCode;
+    if (location.googleMapsLink !== undefined) dbProfile.googleMapsLink = location.googleMapsLink;
+  }
+
+  // ── Services ────────────────────────────────────────────────────────
+  const services = profile?.restaurantServices;
+  if (services) {
+    dbProfile.services = { ...dbProfile.services, ...services };
+    dbProfile.changed("services", true);
+  }
+
+  await dbProfile.save();
+
+  const newUser = await User.findByPk(userId, {
+    attributes: userAttributes,
+    include: [UserProfile, RestaurantProfile],
   });
 
-  const serviceKeys = ["dineIn", "takeAway", "delivery", "reservation", "parkAvailability"];
-  const newServices = {};
-  let hasServices = false;
-
-  serviceKeys.forEach((key) => {
-    const val = req.body[`profile-restaurantServices-${key}`];
-    if (val !== undefined) {
-      newServices[key] = val;
-      hasServices = true;
-    }
+  res.status(200).json({
+    status:  "SUCCESS",
+    message: "Restaurant profile updated successfully",
+    data:    { user: newUser },
+    errors:  null,
   });
-
-  if (hasServices) {
-    profile.services = { ...profile.services, ...newServices };
-    profile.changed("services", true);
-  }
-
-  const days  = req.body["profile-restaurantDetails-workingDays-day"];
-  const froms = req.body["profile-restaurantDetails-workingDays-from"];
-  const tos   = req.body["profile-restaurantDetails-workingDays-to"];
-
-  if (days !== undefined) {
-    const daysArr  = Array.isArray(days)  ? days  : [days];
-    const fromsArr = Array.isArray(froms) ? froms : [froms];
-    const tosArr   = Array.isArray(tos)   ? tos   : [tos];
-
-    profile.workingDays = daysArr.map((day, i) => ({
-      day,
-      from: fromsArr[i],
-      to:   tosArr[i],
-    }));
-    profile.changed("workingDays", true);
-  }
-
-  await profile.save();
-
-  const newUser = await User.findByPk(userId, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
-  res.status(200).json({ status: "SUCCESS", message: "Restaurant profile updated successfully", data: { user: newUser }, errors: null });
 });
 
 exports.editAccount = asyncHandler(async (req, res, next) => {
@@ -143,19 +158,19 @@ exports.editAccount = asyncHandler(async (req, res, next) => {
   if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
 
   if (userName !== undefined) user.userName = userName;
-  if (email !== undefined) user.email = email;
+  if (email    !== undefined) user.email    = email;
 
   if (currentPassword && newPassword) {
     const correct = await bcrypt.compare(currentPassword, user.password);
     if (!correct) return next(new ApiError("Current password is incorrect", 401));
-    user.password = newPassword;
+    user.password          = newPassword;
     user.passwordChangedAt = Date.now();
   }
 
   await user.save();
 
   const jwtToken = await GENERATE_TOKEN({ email: user.email, id: user.id, userName: user.userName });
-  const newUser = await User.findByPk(user.id, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
+  const newUser  = await User.findByPk(user.id, { attributes: userAttributes, include: [UserProfile, RestaurantProfile] });
 
   res.status(200).json({ status: "SUCCESS", message: "Account updated successfully", data: { user: newUser, jwtToken }, errors: null });
 });

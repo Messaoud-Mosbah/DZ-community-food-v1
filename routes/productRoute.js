@@ -15,7 +15,6 @@ const {
   deleteProduct 
 } = require("../services/productService");
 
-// إعداد استقبال صورة المنتج
 const uploadImage = upload.fields([{ name: "image", maxCount: 1 }]);
 
 router.use(protect, allwodTo("RESTAURANT"));
