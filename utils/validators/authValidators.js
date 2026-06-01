@@ -25,13 +25,12 @@ const signupValidator = [
     .notEmpty()
     .withMessage("User name is required")
     .isLength({ min: 3 })
-    .withMessage("User name is too short (min 3)") // عدلتها لتطابق الموديل (6-18)
+    .withMessage("User name is too short (min 3)") 
     .isLength({ max: 30 })
     .withMessage("User name is too long (max 30)")
     .matches(/^[a-zA-Z0-9_-]+$/)
     .withMessage("Username can only contain letters, numbers and underscores")
     .custom(async (val) => {
-      // التعديل: استخدام where في Sequelize
       const user = await User.findOne({ where: { userName: val } });
       if (user) throw new Error("Username already exists");
       return true;

@@ -28,7 +28,7 @@ const sendVerificationEmail = async (user) => {
   user.verificationTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
   await user.save({ fields: ["verificationTokenHash", "verificationTokenExpires"] });
 
-  const verificationURL = `https://feedme-algeria.vercel.app/verify-email?token=${originalToken}`;
+  const verificationURL = `https://feedme-algeria.vercel.app/verify-email?token=${originalToken}&identifier=${user.id}`;
   const htmlContent = `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e0e0e0;border-radius:12px;overflow:hidden;color:#333">
       <div style="background:#1a1a1a;padding:30px;text-align:center">
@@ -196,7 +196,7 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
   userRecord.passwordResetExpires   = new Date(Date.now() + 10 * 60 * 1000);
   await userRecord.save({ fields: ["passwordResetTokenHash", "passwordResetExpires"] });
 
-  const resetURL    = `https://feedme-algeria.vercel.app/reset-password?token=${resetToken}`;
+  const resetURL    = `https://feedme-algeria.vercel.app/reset-password?token=${resetToken}&identifier=${user.id}`;
   const htmlContent = `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e0e0e0;border-radius:12px;overflow:hidden;color:#333">
       <div style="background:#1a1a1a;padding:30px;text-align:center">
@@ -346,7 +346,7 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
     restaurantLocationAndContact,
     restaurantDetails,
     restaurantServices,
-  } = profile.profile ?? {};
+  } = profile ?? {};
 
   const userRecord = await validateOnboardingEligibility(userId, next);
   if (!userRecord) return;
