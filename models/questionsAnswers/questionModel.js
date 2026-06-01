@@ -30,7 +30,7 @@ const Question = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    commentCount: {
+    answerCount: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
