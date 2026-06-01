@@ -86,22 +86,9 @@ const createQuestion = asyncHandler(async (req, res) => {
 
 const getAllQuestions = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
-    const cursor = req.query.cursor;
+  
     const currentUserId = req.authenticatedUser?.id;
-
-    let whereClause = {};
-    if (cursor) {
-        const [cursorPinned, cursorDate] = cursor.split('_');
-        const lastDate = new Date(cursorDate);
-        whereClause = {
-            [Op.or]: [
-                {  createdAt: { [Op.lt]: lastDate } },
-            ]
-        };
-    }
-
     const questions = await Question.findAll({
-        where: whereClause,
         limit,
         order: [ ["createdAt", "DESC"]],
         include: [allAuthorsInclude],
@@ -109,13 +96,9 @@ const getAllQuestions = asyncHandler(async (req, res) => {
 
     const questionsWithMeta = await attachMetaToQuestions(questions, currentUserId);
 
-    let nextCursor = null;
-    if (questions.length > 0) {
-        const lastItem = questions[questions.length - 1];
-        nextCursor = `${lastItem.isPinned}_${lastItem.createdAt.toISOString()}`;
-    }
+ 
 
-    res.status(200).json({ status: "SUCCESS", data: { results: questions.length, nextCursor, questions: questionsWithMeta } });
+    res.status(200).json({ status: "SUCCESS", data: { results: questions.length, questions: questionsWithMeta } });
 });
 
 const getMyQuestions = asyncHandler(async (req, res) => {
