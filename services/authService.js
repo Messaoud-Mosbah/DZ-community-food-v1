@@ -86,7 +86,7 @@ const signup = asyncHandler(async (req, res) => {
   res.status(201).json({
     status:  "SUCCESS",
     message: "Sign up successful. We sent you a verification email.",
-    data:    { user },
+    data:null,
     errors:  null,
   });
 });
@@ -149,7 +149,7 @@ const signin = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(userRecord.id, { include: [UserProfile, RestaurantProfile] });
 
   if (!user.isVerified)
-    return res.status(200).json({ status: "SUCCESS", message: "Please verify your account first.", data: { user }, errors: null });
+    return res.status(200).json({ status: "SUCCESS", message: "Please verify your account first.", data:null, errors: null });
 
   if (user.status === "SUSPENDED")
     return next(new ApiError("Your account has been suspended by the admin.", 403));
@@ -227,7 +227,7 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
   try {
     await sendEmail({ email: userRecord.email, subject: "Password Reset Request (10 min expiration)", html: htmlContent });
     userRecord.password = undefined;
-    res.status(200).json({ status: "SUCCESS", message: "Password reset link sent to your email.", data: { user: userRecord }, errors: null });
+    res.status(200).json({ status: "SUCCESS", message: "Password reset link sent to your email.", data: null, errors: null });
   } catch {
     userRecord.passwordResetTokenHash = null;
     userRecord.passwordResetExpires   = null;
@@ -274,7 +274,7 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     status:  "SUCCESS",
     message: "Password has been reset successfully.",
-    data:    { user, jwtToken },
+    data:null,
     errors:  null,
   });
 });
