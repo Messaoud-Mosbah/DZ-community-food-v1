@@ -28,7 +28,7 @@ exports.getOwnProfile = asyncHandler(async (req, res, next) => {
 
 // GET other user's profile
 exports.getUserProfileById = asyncHandler(async (req, res, next) => {
-  const user = await User.findByPk(req.params.id, {
+  const user = await User.findByPk(req.query.userName, {
     include: [
       { model: UserProfile, required: false, },
       { model: RestaurantProfile, required: false,  },

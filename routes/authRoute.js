@@ -19,8 +19,7 @@ const {
   signupValidator,
   loginValidator,
   validatePassword,
-  userProfileValidator,
-  restaurantProfileValidator,
+  
 } = require("../utils/validators/authValidators");
 const cloudinaryUpload = require("../middlewares/uploadMiddleware");
 
@@ -37,7 +36,7 @@ router.post("/sign-out",                  protect,          logout);
 // ── PASSWORD ──────────────────────────────────────────────────────
 router.post("/forget-password",                   forgetPassword);
 router.get("/verify-reset-password-token/:token", verifyResetToken);
-router.post("/reset-password",                    validatePassword, resetPassword);
+router.post("/reset-password"     ,         validatePassword, resetPassword);
 
 // ── ONBOARDING ────────────────────────────────────────────────────
 router.patch("/onboarding/user",       protect, uploadAvatar, userProfile);

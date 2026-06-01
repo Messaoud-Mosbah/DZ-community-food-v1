@@ -149,7 +149,7 @@ const signin = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(userRecord.id, { include: [UserProfile, RestaurantProfile] });
 
   if (!user.isVerified)
-    return res.status(200).json({ status: "SUCCESS", message: "Please verify your account first.", data:null, errors: null });
+    return res.status(200).json({ status: "SUCCESS", message: "Please verify your account first.", data:{user}, errors: null });
 
   if (user.status === "SUSPENDED")
     return next(new ApiError("Your account has been suspended by the admin.", 403));
@@ -245,7 +245,7 @@ const verifyResetToken = asyncHandler(async (req, res, next) => {
   });
   if (!user) return next(new ApiError("Token is invalid or has expired", 400));
 
-  res.status(200).json({ status: "SUCCESS", message: "Token is valid. You can now reset your password.", data: null, errors: null });
+  res.status(200).json({ status: "SUCCESS", message: "Token is valid. You can now reset your password.", data: {user}, errors: null });
 });
 
 // 8 ── Reset Password
@@ -340,6 +340,7 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Please specify your account type (USER or RESTAURANT).", 400));
 
   const {profile} = parseFormDataToProfile(req.body);
+  console.log(profile);
   const {
     restaurantBasicInformation,
     restaurantLocationAndContact,

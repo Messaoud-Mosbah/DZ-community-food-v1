@@ -7,7 +7,6 @@ const { getOwnProfile, getUserProfileById } = require("../services/viewProfile")
 const setType = (type) => (req, res, next) => { req.profileType = type; next(); };
 
 router.get("/me", protect, allwodTo("RESTAURANT","USER"), getOwnProfile);
-
 router.get("/:id", setType("RESTAURANT","USER"), viewProfileByIdValidator, getUserProfileById);
 
 module.exports = router;
