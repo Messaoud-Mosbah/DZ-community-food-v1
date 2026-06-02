@@ -64,8 +64,7 @@ const createPost = asyncHandler(async (req, res) => {
 
   let mediaTypeValue = "NONE";
   if (images.length > 0) mediaTypeValue = "IMAGE";
-  else if (videoUrl) mediaTypeValue = "VIDEO"; // ✅ videoUrl من body
-
+  else if (videoUrl) mediaTypeValue = "VIDEO"; 
   const post = await Post.create({
     userId: id,
     title,
@@ -80,7 +79,7 @@ const createPost = asyncHandler(async (req, res) => {
     mediaData.push({
       postId: post.id,
       type: "IMAGE",
-      url: img.path, // ✅ multer-cloudinary يحط الرابط في path
+      url: img.path, 
       order: index,
     });
   });
@@ -89,7 +88,7 @@ const createPost = asyncHandler(async (req, res) => {
     mediaData.push({
       postId: post.id,
       type: "VIDEO",
-      url: videoUrl, // ✅ رابط جاي من الفرونت
+      url: videoUrl, 
       order: 0,
     });
   }

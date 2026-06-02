@@ -4,44 +4,41 @@ const asyncHandler = require('express-async-handler')
 
 // ── CREATE POST VALIDATOR ─────────────────
 const validateCreatePost = asyncHandler(async (req, res, next) => {
-  const images = req.files?.images || []
-  const video  = req.files?.video?.[0]
+  const images   = req.files?.images || [];
+  const videoUrl = req.body.videoUrl; // ✅ من body مش من files
 
-  if (images.length > 0 && video) {
-    throw new ApiError('Cannot upload images and video together', 400)
+  if (images.length > 0 && videoUrl) {
+    throw new ApiError('Cannot upload images and video together', 400);
   }
 
   const schema = Joi.object({
-    title: Joi.string().min(3).max(100).required(),
+    title:       Joi.string().min(3).max(100).required(),
     description: Joi.string().min(50).max(5000).required(),
     contentType: Joi.string().valid('RECIPE', 'DISH').optional(),
-    mediaType: Joi.string().valid('IMAGE', 'VIDEO', 'NONE'),
-    keptMediaIds: Joi.any().optional() 
-  })
+    mediaType:   Joi.string().valid('IMAGE', 'VIDEO', 'NONE').optional(),
+    videoUrl:    Joi.string().uri().optional(), // ✅ أضفناه
+    keptMediaIds: Joi.any().optional(),
+  });
 
-  const { error } = schema.validate(req.body)
-  if (error) throw new ApiError(error.details[0].message, 400)
+  const { error } = schema.validate(req.body);
+  if (error) throw new ApiError(error.details[0].message, 400);
 
-  next()
-})
+  next();
+});
 
 // ── GET ALL POSTS VALIDATOR ─────────────────
 const validateGetPosts = asyncHandler(async (req, res, next) => {
   const schema = Joi.object({
     cursor: Joi.date().iso().optional(),
-    limit: Joi.number().integer().min(1).max(50).optional(),
+    limit:  Joi.number().integer().min(1).max(50).optional(),
   });
-
-  // const { error } = schema.validate(req.query);
-  // if (error) throw new ApiError(error.details[0].message, 400);
-
   next();
 });
 
 // ── GET ONE POST VALIDATOR ─────────────────
 const validateidpost = asyncHandler(async (req, res, next) => {
   const schema = Joi.object({
-    id: Joi.string().uuid().required()
+    id: Joi.string().uuid().required(),
   });
 
   const { error } = schema.validate(req.params);
@@ -50,13 +47,12 @@ const validateidpost = asyncHandler(async (req, res, next) => {
   next();
 });
 
-
 // ── UPDATE POST VALIDATOR ─────────────────
 const validateUpdatePost = asyncHandler(async (req, res, next) => {
-  const images = req.files?.images || [];
-  const video = req.files?.video?.[0];
+  const images   = req.files?.images || [];
+  const videoUrl = req.body.videoUrl; // ✅ من body مش من files
 
-  if (images.length > 0 && video) {
+  if (images.length > 0 && videoUrl) {
     throw new ApiError('Cannot upload images and video together', 400);
   }
 
@@ -70,29 +66,23 @@ const validateUpdatePost = asyncHandler(async (req, res, next) => {
   }
 
   const schema = Joi.object({
-    title: Joi.string().max(255).required(),
-    description: Joi.string().max(255).required(),
-    contentType: Joi.string().valid('RECIPE', 'DISH', 'POST', 'REEL').optional(),
-    mediaType: Joi.string().valid('IMAGE', 'VIDEO', 'NONE').optional(), // ✅ optional
-    keptMediaIds: Joi.array().optional()
+    title:        Joi.string().max(255).required(),
+    description:  Joi.string().max(255).required(),
+    contentType:  Joi.string().valid('RECIPE', 'DISH', 'POST', 'REEL').optional(),
+    mediaType:    Joi.string().valid('IMAGE', 'VIDEO', 'NONE').optional(),
+    videoUrl:     Joi.string().uri().optional(), // ✅ أضفناه
+    keptMediaIds: Joi.array().optional(),
   });
 
-  const { error } = schema.validate({
-    ...req.body,
-    keptMediaIds
-  });
-
-  if (error) {
-    throw new ApiError(error.details[0].message, 400);
-  }
+  const { error } = schema.validate({ ...req.body, keptMediaIds });
+  if (error) throw new ApiError(error.details[0].message, 400);
 
   next();
 });
 
-
-module.exports = { 
+module.exports = {
   validateCreatePost,
   validateUpdatePost,
   validateGetPosts,
-  validateidpost  
-}
+  validateidpost,
+};
