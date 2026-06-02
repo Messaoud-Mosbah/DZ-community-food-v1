@@ -47,7 +47,8 @@ exports.getOneProduct = asyncHandler(async (req, res, next) => {
     const product = await Product.findOne({ where: { id: req.params.id, restaurantProfileId: profile.id } });
     if (!product) return next(new ApiError("Product not found", 404));
 
-    res.status(200).json({ status: "SUCCESS", data: { product }, errors: null });
+    res.status(200).json({ status: "SUCCESS", data: { product },
+         errors: null,message:"product get successfully" });
 });
 
 // 3. Create Product
@@ -65,7 +66,14 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
         restaurantProfileId: profile.id
     });
 
-    res.status(201).json({ status: "SUCCESS", data: { product }, errors: null });
+    res
+      .status(201)
+      .json({
+        status: "SUCCESS",
+        data: { product },
+        errors: null,
+        message: "product created successfully",
+      });
 });
 
 // 4. Update Product
@@ -82,14 +90,13 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
     if (price !== undefined) product.price = price;
     if (preparingTime !== undefined) product.preparingTime = preparingTime;
     if (category !== undefined) product.category = parseCategory(category);
-    
-    // تعديل: تحديث الصورة باستخدام رابط Cloudinary السحابي في حال تم رفع صورة جديدة
-    if (req.files?.image?.[0]) {
+        if (req.files?.image?.[0]) {
         product.image = req.files.image[0].url;
     }
 
     await product.save();
-    res.status(200).json({ status: "SUCCESS", data: { product }, errors: null });
+    res.status(200).json({ status: "SUCCESS", data: { product }, errors: null ,
+        message:"product updated successfully" });
 });
 
 // 5. Delete Product

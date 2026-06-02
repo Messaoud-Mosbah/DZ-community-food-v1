@@ -13,7 +13,6 @@ const auth = [protect, allwodTo("USER", "RESTAURANT", "ADMIN")];
 
 const uploadFields = upload.fields([
   { name: "images", maxCount: 10 },
-  { name: "video", maxCount: 1 }
 ]);
 
 // ── POSTS ─────────────────────────────────────────────────────────

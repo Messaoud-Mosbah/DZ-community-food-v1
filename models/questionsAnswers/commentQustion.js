@@ -12,7 +12,7 @@ const CommentQuestion = sequelize.define("CommentQuestion", {
   hooks: {
     afterCreate: async (comment, options) => {
       if (sequelize.models.Question) {
-        await sequelize.models.Question.increment('commentCount', {
+        await sequelize.models.Question.increment('answerCount', {
           by: 1,
           where: { id: comment.questionId },
           transaction: options.transaction

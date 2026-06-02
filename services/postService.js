@@ -59,13 +59,12 @@ const attachMetaToPosts = async (posts, currentUserId) => {
 
 const createPost = asyncHandler(async (req, res) => {
   const images = req.files?.images || [];
-  const video = req.files?.video?.[0];
-  const { title, description, contentType } = req.body;
+  const { title, description, contentType, videoUrl } = req.body; // ✅ videoUrl
   const { id } = req.authenticatedUser;
 
   let mediaTypeValue = "NONE";
   if (images.length > 0) mediaTypeValue = "IMAGE";
-  else if (video) mediaTypeValue = "VIDEO";
+  else if (videoUrl) mediaTypeValue = "VIDEO";
 
   const post = await Post.create({
     userId: id,
@@ -76,22 +75,22 @@ const createPost = asyncHandler(async (req, res) => {
   });
 
   const mediaData = [];
-  
-  // تعديل: حفظ رابط Cloudinary المباشر القادم من الـ Middleware
+
   images.forEach((img, index) => {
     mediaData.push({
       postId: post.id,
       type: "IMAGE",
-      url: img.url, // الرابط السحابي الكامل
+      url: img.url,
       order: index,
     });
   });
 
-  if (video) {
+  if (videoUrl) {
+    // ✅
     mediaData.push({
       postId: post.id,
       type: "VIDEO",
-      url: video.url, // الرابط السحابي الكامل للـ Video
+      url: videoUrl, // ✅
       order: 0,
     });
   }
@@ -102,7 +101,13 @@ const createPost = asyncHandler(async (req, res) => {
     include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
   });
 
-  res.status(201).json({ status: "SUCCESS",message:"Post create successfuly", data: { post: fullPost } });
+  res
+    .status(201)
+    .json({
+      status: "SUCCESS",
+      message: "Post create successfuly",
+      data: { post: fullPost },
+    });
 });
 
 const getAllPosts = asyncHandler(async (req, res) => {
@@ -115,12 +120,14 @@ const getAllPosts = asyncHandler(async (req, res) => {
     const separatorIndex = cursor.indexOf("_");
     const cursorPinned = cursor.substring(0, separatorIndex);
     const cursorDate = cursor.substring(separatorIndex + 1);
-    
+
     const isPinned = cursorPinned === "true";
     const lastDate = new Date(cursorDate);
 
     if (isNaN(lastDate.getTime())) {
-      return res.status(400).json({ status: "ERROR", message: "Invalid cursor" });
+      return res
+        .status(400)
+        .json({ status: "ERROR", message: "Invalid cursor" });
     }
 
     whereClause = {
@@ -144,14 +151,14 @@ const getAllPosts = asyncHandler(async (req, res) => {
   const postsWithMeta = await attachMetaToPosts(posts, currentUserId);
 
   let nextCursor = null;
-  if (posts.length === limit) { 
+  if (posts.length === limit) {
     const lastItem = posts[posts.length - 1];
-    nextCursor = `${lastItem.isPinned}_${lastItem.createdAt.toISOString()}`; // تعديل بسيط للـ separator ليتوافق مع الـ split المكتوب فوق (_) بدلاً من (|)
+    nextCursor = `${lastItem.isPinned}_${lastItem.createdAt.toISOString()}`;
   }
 
   res.status(200).json({
     status: "SUCCESS",
-    message:"Post gets successfuly",
+    message: "Post gets successfuly",
     data: { results: posts.length, nextCursor, posts: postsWithMeta },
   });
 });
@@ -219,9 +226,8 @@ const getOnePost = asyncHandler(async (req, res, next) => {
 
 const updatePost = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const { title, description, contentType, keptMediaIds } = req.body;
+  const { title, description, contentType, keptMediaIds, videoUrl } = req.body; // ✅ videoUrl
   const images = req.files?.images || [];
-  const video = req.files?.video?.[0];
   const { id: authId } = req.authenticatedUser;
 
   const post = await Post.findByPk(id);
@@ -249,8 +255,7 @@ const updatePost = asyncHandler(async (req, res, next) => {
     });
 
     const mediaData = [];
-    
-    // تعديل: استخدام روابط Cloudinary المباشرة عند التحديث
+
     images.forEach((img, index) => {
       mediaData.push({
         postId: post.id,
@@ -260,11 +265,12 @@ const updatePost = asyncHandler(async (req, res, next) => {
       });
     });
 
-    if (video)
+    if (videoUrl)
+      // ✅
       mediaData.push({
         postId: post.id,
         type: "VIDEO",
-        url: video.url,
+        url: videoUrl, // ✅
         order: 0,
       });
 
@@ -291,7 +297,13 @@ const updatePost = asyncHandler(async (req, res, next) => {
     const updatedPost = await Post.findByPk(id, {
       include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
     });
-    res.status(200).json({ status: "SUCCESS",message:"Post update successfuly", data: { post: updatedPost } });
+    res
+      .status(200)
+      .json({
+        status: "SUCCESS",
+        message: "Post update successfuly",
+        data: { post: updatedPost },
+      });
   } catch (error) {
     await transaction.rollback();
     next(error);
@@ -425,10 +437,7 @@ const getMyLikedPosts = asyncHandler(async (req, res) => {
     include: [
       {
         model: Post,
-        include: [
-          { model: PostMedia, as: "media" },
-          getAuthorInclude(),
-        ],
+        include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
       },
     ],
     order: [["createdAt", "DESC"]],
@@ -437,11 +446,13 @@ const getMyLikedPosts = asyncHandler(async (req, res) => {
   const posts = likedPosts.map((l) => l.Post);
   const postsWithMeta = await attachMetaToPosts(posts, currentUserId);
 
-  res.status(200).json({
-    status: "SUCCESS",
-    results: likedPosts.length,
-    data: { posts: postsWithMeta },
-  });
+  res
+    .status(200)
+    .json({
+      status: "SUCCESS",
+      results: likedPosts.length,
+      data: { posts: postsWithMeta },
+    });
 });
 
 // ── 4. SAVED POSTS SECTION ────────────────────────────────────────
@@ -457,10 +468,22 @@ const toggleSavePost = asyncHandler(async (req, res, next) => {
 
   if (savedItem) {
     await savedItem.destroy();
-    res.status(200).json({ status: "SUCCESS", message: "Post removed from saved posts", data: { isSaved: false } });
+    res
+      .status(200)
+      .json({
+        status: "SUCCESS",
+        message: "Post removed from saved posts",
+        data: { isSaved: false },
+      });
   } else {
     await SavedPost.create({ userId, postId });
-    res.status(201).json({ status: "SUCCESS", message: "Post saved to saved posts", data: { isSaved: true } });
+    res
+      .status(201)
+      .json({
+        status: "SUCCESS",
+        message: "Post saved to saved posts",
+        data: { isSaved: true },
+      });
   }
 });
 
@@ -472,10 +495,7 @@ const getMySavedPosts = asyncHandler(async (req, res) => {
     include: [
       {
         model: Post,
-        include: [
-          { model: PostMedia, as: "media" },
-          getAuthorInclude(),
-        ],
+        include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
       },
     ],
   });
@@ -483,11 +503,13 @@ const getMySavedPosts = asyncHandler(async (req, res) => {
   const posts = savedPosts.map((s) => s.Post);
   const postsWithMeta = await attachMetaToPosts(posts, currentUserId);
 
-  res.status(200).json({
-    status: "SUCCESS",
-    results: savedPosts.length,
-    data: { posts: postsWithMeta },
-  });
+  res
+    .status(200)
+    .json({
+      status: "SUCCESS",
+      results: savedPosts.length,
+      data: { posts: postsWithMeta },
+    });
 });
 
 // ── EXPORTS ───────────────────────────────────────────────────────
@@ -506,5 +528,5 @@ module.exports = {
   getMyLikedPosts,
   toggleSavePost,
   getMySavedPosts,
-  otherPosts
+  otherPosts,
 };
