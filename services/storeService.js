@@ -2,13 +2,10 @@ const asyncHandler = require("express-async-handler");
 const { Product, RestaurantProfile, User } = require("../models");
 const { Op } = require("sequelize");
 
-<<<<<<< HEAD
-const productAttributes = ["id", "name", "price", "description", "image", "preparingTime", "category"];
-=======
+
 const productAttributes = ["id", "name", "price",
      "description", "image", "preparingTime", 
      "category"];
->>>>>>> 1f679669762168fdfab5aa06ae7762b8e3b3e308
 
 const restaurantInclude = {
     model: RestaurantProfile,
