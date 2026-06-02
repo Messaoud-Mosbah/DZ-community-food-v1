@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const postService = require("../services/postService");
-const { protect, allwodTo } = require("../services/authService"); // تم تعديل الاسم هنا للأصح إملائياً
+const { protect, allwodTo } = require("../services/authService");
 const upload = require("../middlewares/uploadMiddleware");
 const {
   validateCreatePost,
@@ -16,20 +16,19 @@ const uploadFields = upload.fields([
 ]);
 
 // ── POSTS ─────────────────────────────────────────────────────────
-router.get("/",         ...auth, postService.getAllPosts);
-router.post("/",        ...auth, uploadFields, validateCreatePost, postService.createPost);
-router.get("/my-posts", ...auth, postService.getMyPosts);
-router.get("/other-posts/:id", ...auth, postService.otherPosts);
-
-router.get("/pin/:id",  ...auth, postService.togglePin);
+router.get("/",                    ...auth, postService.getAllPosts);
+router.post("/",                   ...auth, uploadFields, validateCreatePost, postService.createPost);
+router.get("/my-posts",            ...auth, postService.getMyPosts);
+router.get("/other-posts/:id",     ...auth, postService.otherPosts);
+router.get("/pin/:id",             ...auth, postService.togglePin);
 
 // ── LIKES ─────────────────────────────────────────────────────────
 router.post("/:postId/toggle-like", ...auth, postService.toggleLike);
 router.get("/liked",                ...auth, postService.getMyLikedPosts);
 
 // ── SAVED ─────────────────────────────────────────────────────────
-router.post("/toggleSavePost/:postId",   ...auth, postService.toggleSavePost);
-router.get("/saved",               ...auth, postService.getMySavedPosts);
+router.post("/toggleSavePost/:postId", ...auth, postService.toggleSavePost);
+router.get("/saved",                   ...auth, postService.getMySavedPosts);
 
 // ── COMMENTS ──────────────────────────────────────────────────────
 router.get("/:postId/comments",  ...auth, postService.getPostComments);

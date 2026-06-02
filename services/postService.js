@@ -59,7 +59,7 @@ const attachMetaToPosts = async (posts, currentUserId) => {
 
 const createPost = asyncHandler(async (req, res) => {
   const images = req.files?.images || [];
-  const { title, description, contentType, videoUrl } = req.body; // ✅ videoUrl
+  const { title, description, contentType, videoUrl } = req.body;
   const { id } = req.authenticatedUser;
 
   let mediaTypeValue = "NONE";
@@ -86,11 +86,10 @@ const createPost = asyncHandler(async (req, res) => {
   });
 
   if (videoUrl) {
-    // ✅
     mediaData.push({
       postId: post.id,
       type: "VIDEO",
-      url: videoUrl, // ✅
+      url: videoUrl,
       order: 0,
     });
   }
@@ -101,13 +100,11 @@ const createPost = asyncHandler(async (req, res) => {
     include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
   });
 
-  res
-    .status(201)
-    .json({
-      status: "SUCCESS",
-      message: "Post create successfuly",
-      data: { post: fullPost },
-    });
+  res.status(201).json({
+    status: "SUCCESS",
+    message: "Post created successfully",
+    data: { post: fullPost },
+  });
 });
 
 const getAllPosts = asyncHandler(async (req, res) => {
@@ -158,7 +155,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     status: "SUCCESS",
-    message: "Post gets successfuly",
+    message: "Posts fetched successfully",
     data: { results: posts.length, nextCursor, posts: postsWithMeta },
   });
 });
@@ -226,7 +223,7 @@ const getOnePost = asyncHandler(async (req, res, next) => {
 
 const updatePost = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const { title, description, contentType, keptMediaIds, videoUrl } = req.body; // ✅ videoUrl
+  const { title, description, contentType, keptMediaIds, videoUrl } = req.body;
   const images = req.files?.images || [];
   const { id: authId } = req.authenticatedUser;
 
@@ -265,14 +262,14 @@ const updatePost = asyncHandler(async (req, res, next) => {
       });
     });
 
-    if (videoUrl)
-      // ✅
+    if (videoUrl) {
       mediaData.push({
         postId: post.id,
         type: "VIDEO",
-        url: videoUrl, // ✅
+        url: videoUrl,
         order: 0,
       });
+    }
 
     if (mediaData.length > 0)
       await PostMedia.bulkCreate(mediaData, { transaction });
@@ -297,13 +294,12 @@ const updatePost = asyncHandler(async (req, res, next) => {
     const updatedPost = await Post.findByPk(id, {
       include: [{ model: PostMedia, as: "media" }, getAuthorInclude()],
     });
-    res
-      .status(200)
-      .json({
-        status: "SUCCESS",
-        message: "Post update successfuly",
-        data: { post: updatedPost },
-      });
+
+    res.status(200).json({
+      status: "SUCCESS",
+      message: "Post updated successfully",
+      data: { post: updatedPost },
+    });
   } catch (error) {
     await transaction.rollback();
     next(error);
@@ -481,7 +477,7 @@ const toggleSavePost = asyncHandler(async (req, res, next) => {
       .status(201)
       .json({
         status: "SUCCESS",
-        message: "Post saved to saved posts",
+        message: "Post saved successfully",
         data: { isSaved: true },
       });
   }
