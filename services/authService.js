@@ -28,7 +28,8 @@ const sendVerificationEmail = async (user) => {
   user.verificationTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
   await user.save({ fields: ["verificationTokenHash", "verificationTokenExpires"] });
 
-  const verificationURL = `https://feedme-algeria.vercel.app/verify-email?token=${originalToken}&identifier=${user.id}`;
+  // const verificationURL = `https://feedme-algeria.vercel.app/verify-email?token=${originalToken}&identifier=${user.userName}`;
+  const verificationURL = `http://localhost:3000/verify-email?token=${originalToken}&identifier=${user.userName}`;
   const htmlContent = `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e0e0e0;border-radius:12px;overflow:hidden;color:#333">
       <div style="background:#1a1a1a;padding:30px;text-align:center">
@@ -81,6 +82,7 @@ const signup = asyncHandler(async (req, res) => {
 
   const user = await User.create({ userName, email, password });
   await sendVerificationEmail(user);
+
 
   user.password = undefined;
   res.status(201).json({
@@ -182,21 +184,30 @@ const logout = asyncHandler(async (req, res, next) => {
 // 6 ── Forget Password
 const forgetPassword = asyncHandler(async (req, res, next) => {
   const { identifier } = req.body;
-  if (!identifier) return next(new ApiError("Email or Username is required", 400));
+  if (!identifier)
+    return next(new ApiError("Email or Username is required", 400));
 
   const userRecord = await User.findOne({
     where: { [Op.or]: [{ email: identifier }, { userName: identifier }] },
   });
-  if (!userRecord) return next(new ApiError("No account found with this email/username", 404));
+  if (!userRecord)
+    return next(new ApiError("No account found with this email/username", 404));
 
-  const resetToken  = crypto.randomBytes(32).toString("hex");
-  const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
 
   userRecord.passwordResetTokenHash = hashedToken;
-  userRecord.passwordResetExpires   = new Date(Date.now() + 10 * 60 * 1000);
-  await userRecord.save({ fields: ["passwordResetTokenHash", "passwordResetExpires"] });
+  userRecord.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-  const resetURL    = `https://feedme-algeria.vercel.app/reset-password?token=${resetToken}&identifier=${user.id}`;
+  await userRecord.save({
+    fields: ["passwordResetTokenHash", "passwordResetExpires"],
+  });
+
+  const resetURL = `http://localhost:3000/reset-password?token=${resetToken}&identifier=${userRecord.userName}`;
+  // const resetURL    = `https://feedme-algeria.vercel.app/reset-password?token=${resetToken}&identifier=${userRecord.userName}`;
   const htmlContent = `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e0e0e0;border-radius:12px;overflow:hidden;color:#333">
       <div style="background:#1a1a1a;padding:30px;text-align:center">
@@ -225,14 +236,29 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
     </div>`;
 
   try {
-    await sendEmail({ email: userRecord.email, subject: "Password Reset Request (10 min expiration)", html: htmlContent });
+    await sendEmail({
+      email: userRecord.email,
+      subject: "Password Reset Request (10 min expiration)",
+      html: htmlContent,
+    });
     userRecord.password = undefined;
-    res.status(200).json({ status: "SUCCESS", message: "Password reset link sent to your email.", data: null, errors: null });
+    res
+      .status(200)
+      .json({
+        status: "SUCCESS",
+        message: "Password reset link sent to your email.",
+        data: null,
+        errors: null,
+      });
   } catch {
     userRecord.passwordResetTokenHash = null;
-    userRecord.passwordResetExpires   = null;
-    await userRecord.save({ fields: ["passwordResetTokenHash", "passwordResetExpires"] });
-    return next(new ApiError("Failed to send email. Please try again later.", 500));
+    userRecord.passwordResetExpires = null;
+    await userRecord.save({
+      fields: ["passwordResetTokenHash", "passwordResetExpires"],
+    });
+    return next(
+      new ApiError("Failed to send email. Please try again later.", 500),
+    );
   }
 });
 
@@ -340,7 +366,6 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Please specify your account type (USER or RESTAURANT).", 400));
 
   const {profile} = parseFormDataToProfile(req.body);
-  console.log(profile);
   const {
     restaurantBasicInformation,
     restaurantLocationAndContact,

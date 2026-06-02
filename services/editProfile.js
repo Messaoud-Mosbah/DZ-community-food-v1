@@ -6,7 +6,16 @@ const bcrypt = require("bcryptjs");
 const { parseFormDataToProfile } = require("../utils/parse");
 
 const userAttributes = ["id", "userName", "email", "slug", "role", "followersCount", "followingCount", "isVerified", "isOnboardingCompleted", "createdAt"];
+const validateOnboardingEligibility = async (userId, next) => {
+  const userRecord = await User.findByPk(userId);
 
+  if (!userRecord)               return next(new ApiError("User synchronization failed: Account not found.", 404));
+  if (userRecord.isLoggedOut)    return next(new ApiError("You are logged out, please sign in again.", 403));
+  if (userRecord.isOnboardingCompleted)
+    return next(new ApiError("Profile Already Active: Your onboarding process is already completed.", 400));
+
+  return userRecord;
+};
 exports.editUserProfile = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
   const user   = await User.findByPk(userId);
@@ -60,15 +69,25 @@ exports.editUserProfile = asyncHandler(async (req, res, next) => {
 
 exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
-  const user   = await User.findByPk(userId);
-  if (user.isLoggedOut) return next(new ApiError("You are logged out, please sign in again", 403));
+  const user = await User.findByPk(userId);
 
+  if (user.isLoggedOut) {
+    return next(new ApiError("You are logged out, please sign in again", 403));
+  }
+
+  // البحث عن الحساب أو إنشائه تلقائياً إذا لم يكن موجوداً
   let dbProfile = await RestaurantProfile.findOne({ where: { userId } });
   if (!dbProfile) {
     dbProfile = await RestaurantProfile.create({
       userId,
-      services:        { dineIn: "NO", takeAway: "NO", delivery: "NO", reservation: "NO", parkAvailability: "NO" },
-      workingDays:     [],
+      services: {
+        dineIn: "NO",
+        takeAway: "NO",
+        delivery: "NO",
+        reservation: "NO",
+        parkAvailability: "NO",
+      },
+      workingDays: [],
       kitchenCategory: [],
     });
   }
@@ -82,18 +101,23 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
     dbProfile.restaurantLogoUrl = null;
   }
 
+  // ── Basic Information ────────────────────────────────────────────────
   const basic = profile?.restaurantBasicInformation;
   if (basic) {
-    if (basic.restaurantName !== undefined) dbProfile.restaurantName = basic.restaurantName;
-    if (basic.businessEmail  !== undefined) dbProfile.businessEmail  = basic.businessEmail;
-    if (basic.phoneNumber    !== undefined) dbProfile.phoneNumber    = basic.phoneNumber;
+    if (basic.restaurantName !== undefined)
+      dbProfile.restaurantName = basic.restaurantName;
+    if (basic.businessEmail !== undefined)
+      dbProfile.businessEmail = basic.businessEmail;
+    if (basic.phoneNumber !== undefined)
+      dbProfile.phoneNumber = basic.phoneNumber;
   }
 
+  // ── Details (تم إصلاح الأقواس هنا) ───────────────────────────────────
   const details = profile?.restaurantDetails;
   if (details) {
     if (details.bio !== undefined) dbProfile.bio = details.bio;
 
-    // ── kitchenCategory ────────────────────────────────────────────────
+    // kitchenCategory
     if (details.kitchenCategory !== undefined) {
       dbProfile.kitchenCategory = Array.isArray(details.kitchenCategory)
         ? details.kitchenCategory
@@ -101,49 +125,48 @@ exports.editRestaurantProfile = asyncHandler(async (req, res, next) => {
       dbProfile.changed("kitchenCategory", true);
     }
 
-    // ── Working Days ───────────────────────────────────────────────────
+    // Working Days
     if (details.workingDays !== undefined) {
-      const wd = details.workingDays;
-      const days  = Array.isArray(wd.day)  ? wd.day  : wd.day  ? [wd.day]  : [];
-      const froms = Array.isArray(wd.from) ? wd.from : wd.from ? [wd.from] : [];
-      const tos   = Array.isArray(wd.to)   ? wd.to   : wd.to   ? [wd.to]   : [];
-
-      dbProfile.workingDays = days.map((day, i) => ({
-        day,
-        from: froms[i] || "",
-        to:   tos[i]   || "",
-      }));
+      dbProfile.workingDays = Array.isArray(details.workingDays)
+        ? details.workingDays
+        : [details.workingDays];
       dbProfile.changed("workingDays", true);
     }
   }
 
+  // ── Location ─────────────────────────────────────────────────────────
   const location = profile?.restaurantLocationAndContact;
   if (location) {
-    if (location.city           !== undefined) dbProfile.city           = location.city;
-    if (location.street         !== undefined) dbProfile.street         = location.street;
-    if (location.postalCode     !== undefined) dbProfile.postalCode     = location.postalCode;
-    if (location.googleMapsLink !== undefined) dbProfile.googleMapsLink = location.googleMapsLink;
+    if (location.city !== undefined) dbProfile.city = location.city;
+    if (location.street !== undefined) dbProfile.street = location.street;
+    if (location.postalCode !== undefined)
+      dbProfile.postalCode = location.postalCode;
+    if (location.googleMapsLink !== undefined)
+      dbProfile.googleMapsLink = location.googleMapsLink;
   }
 
   // ── Services ────────────────────────────────────────────────────────
   const services = profile?.restaurantServices;
   if (services) {
+    // دمج الخدمات القديمة مع الجديدة لتجنب مسح البيانات الأخرى
     dbProfile.services = { ...dbProfile.services, ...services };
     dbProfile.changed("services", true);
   }
 
+  // حفظ التعديلات في قاعدة البيانات
   await dbProfile.save();
 
+  // جلب بيانات المستخدم المحدثة لإرجاعها في الرد
   const newUser = await User.findByPk(userId, {
-    attributes: userAttributes,
+    attributes: userAttributes, // تأكد أن متغير userAttributes معرف لديك في أعلى الملف
     include: [UserProfile, RestaurantProfile],
   });
 
-  res.status(200).json({
-    status:  "SUCCESS",
+  return res.status(200).json({
+    status: "SUCCESS",
     message: "Restaurant profile updated successfully",
-    data:    { user: newUser },
-    errors:  null,
+    data: { user: newUser },
+    errors: null,
   });
 });
 
