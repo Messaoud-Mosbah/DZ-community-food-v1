@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../utils/apiError");
-const { User, UserProfile, RestaurantProfile, Post,SavedPost,PostMedia } = require("../models");
+const { User, UserProfile, RestaurantProfile } = require("../models");
 
 const userAttributes = [
     'id', 'userName', 'email', 'role', 'status',
@@ -9,15 +9,10 @@ const userAttributes = [
     'createdAt', 'updatedAt'
 ];
 
-// GET own profile
 exports.getOwnProfile = asyncHandler(async (req, res, next) => {
     const user = await User.findByPk(req.authenticatedUser.id, {
-       attributes: userAttributes,
-        include: [
-            UserProfile, 
-            RestaurantProfile, 
-           
-        ]
+        attributes: userAttributes,
+        include: [UserProfile, RestaurantProfile]
     });
 
     if (!user) return next(new ApiError("User not found", 404));
@@ -26,25 +21,24 @@ exports.getOwnProfile = asyncHandler(async (req, res, next) => {
     res.status(200).json({ status: "SUCCESS", data: { user }, errors: null });
 });
 
-// GET other user's profile
 exports.getUserProfileById = asyncHandler(async (req, res, next) => {
-  const user = await User.findByPk(req.query.userName, {
-    include: [
-      { model: UserProfile, required: false, },
-      { model: RestaurantProfile, required: false,  },
-    ],
-  });
+    const user = await User.findOne({
+        where: { userName: req.query.userName },
+        include: [
+            { model: UserProfile, required: false },
+            { model: RestaurantProfile, required: false },
+        ],
+    });
 
-  if (!user) return next(new ApiError("User not found", 404));
+    if (!user) return next(new ApiError("User not found", 404));
 
-  const profile = user.toJSON();
+    const profile = user.toJSON();
 
-  if (user.role === "RESTAURANT") {
-    delete profile.UserProfile;
-  } else {
-    delete profile.RestaurantProfile;
-  }
+    if (user.role === "RESTAURANT") {
+        delete profile.UserProfile;
+    } else {
+        delete profile.RestaurantProfile;
+    }
 
-
-  res.status(200).json({ status: "SUCCESS", data: { user: profile }, errors: null });
+    res.status(200).json({ status: "SUCCESS", data: { user: profile }, errors: null });
 });

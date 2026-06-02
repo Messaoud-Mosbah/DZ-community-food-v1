@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const postService = require("../services/postService");
-const { protect, allwodTo } = require("../services/authService"); 
+const { protect, allwodTo } = require("../services/authService"); // تم تعديل الاسم هنا للأصح إملائياً
+const upload = require("../middlewares/uploadMiddleware");
 const {
   validateCreatePost,
   validateUpdatePost,
